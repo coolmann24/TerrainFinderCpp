@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <functional>
+#include <memory>
 
 class ChunkGenerator
 {
@@ -34,9 +35,9 @@ public:
     static const constexpr int END = 2;
     static const constexpr int FOREST = 3;
     static const constexpr int HELL = 4;
-    static const constexpr int HILLS = 5;
+    static const constexpr int HILLSNORMAL = 5;
     static const constexpr int JUNGLE = 6;
-    static const constexpr int MESA = 7;
+    static const constexpr int MESANORMAL = 7;
     static const constexpr int MUSHROOMISLAND = 8;
     static const constexpr int OCEAN = 9;
     static const constexpr int PLAINS = 10;
@@ -45,11 +46,20 @@ public:
     static const constexpr int SNOW = 13;
     static const constexpr int STONEBEACH = 14;
     static const constexpr int SWAMP = 15;
-    static const constexpr int TAIGA = 16;
+    static const constexpr int TAIGANORMAL = 16;
     static const constexpr int VOID = 17;
 
     static const constexpr int FORESTMUTATED = 18;
     static const constexpr int SAVANNAMUTATED = 19;
+
+    static const constexpr int HILLSEXTRATREES = 20;
+    static const constexpr int HILLSMUTATED = 21;
+
+    static const constexpr int MESABRYCE = 22;
+    static const constexpr int MESAFOREST = 23;
+    static const constexpr int MESABRYCEFOREST = 24;
+
+    static const constexpr int TAIGAMEGA = 25;
 
 private:
     static const constexpr float depthNoiseScaleX = 200.0;
@@ -76,6 +86,9 @@ private:
     NoiseGeneratorOctaves maxLimitPerlinNoise;
     NoiseGeneratorOctaves mainPerlinNoise;
     NoiseGeneratorPerlin surfaceNoise;
+    std::unique_ptr<NoiseGeneratorPerlin> mesaPillarNoise;
+    std::unique_ptr<NoiseGeneratorPerlin> mesaPillarRoofNoise;
+    std::unique_ptr<NoiseGeneratorPerlin> grassColorNoise;
     NoiseGeneratorOctaves scaleNoise;
     NoiseGeneratorOctaves depthNoise;
     NoiseGeneratorOctaves forestNoise;
@@ -96,6 +109,8 @@ private:
 
     void registerGenTerrainFuncs();
 
+    std::unordered_set<int> dont_generate_biome_terrain;//only for mesa
+
     
 public:
     ChunkGenerator(int64_t world_seed, int64_t* randprimedseed);
@@ -114,9 +129,9 @@ private:
     void EndGTB(int64_t*, ChunkData&, int, int, double);
     void ForestGTB(int64_t*, ChunkData&, int, int, double);
     void HellGTB(int64_t*, ChunkData&, int, int, double);
-    void HillsGTB(int64_t*, ChunkData&, int, int, double);
+    void HillsGTB(int64_t*, ChunkData&, int, int, double, bool, bool);
     void JungleGTB(int64_t*, ChunkData&, int, int, double);
-    void MesaGTB(int64_t*, ChunkData&, int, int, double);
+    void MesaGTB(int64_t*, ChunkData&, int, int, double, bool, bool);
     void MushroomIslandGTB(int64_t*, ChunkData&, int, int, double);
     void OceanGTB(int64_t*, ChunkData&, int, int, double);
     void PlainsGTB(int64_t*, ChunkData&, int, int, double);
@@ -125,7 +140,7 @@ private:
     void SnowGTB(int64_t*, ChunkData&, int, int, double);
     void StoneBeachGTB(int64_t*, ChunkData&, int, int, double);
     void SwampGTB(int64_t*, ChunkData&, int, int, double);
-    void TaigaGTB(int64_t*, ChunkData&, int, int, double);
+    void TaigaGTB(int64_t*, ChunkData&, int, int, double, bool);
     void VoidGTB(int64_t*, ChunkData&, int, int, double);
 
     void ForestMutatedGTB(int64_t*, ChunkData&, int, int, double);

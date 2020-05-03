@@ -25,6 +25,15 @@ ChunkGenerator::ChunkGenerator(int64_t world_seed, int64_t* randprimedseed):
     top_block_ = GRASS;
     filler_block_ = DIRT;
 
+    int64_t tempseed = world_seed;
+    setSeed(&tempseed);
+    mesaPillarNoise = std::make_unique<NoiseGeneratorPerlin>(&tempseed, 4);
+    mesaPillarRoofNoise = std::make_unique<NoiseGeneratorPerlin>(&tempseed, 1);
+
+    int64_t grassNoiseSeed = 2345L;
+    setSeed(&grassNoiseSeed);
+    grassColorNoise = std::make_unique<NoiseGeneratorPerlin>(&grassNoiseSeed, 1);
+
     initBiomes();
 
     stack_ = setupGenerator(MC_1_12);
@@ -34,6 +43,11 @@ ChunkGenerator::ChunkGenerator(int64_t world_seed, int64_t* randprimedseed):
     registerBiomeIdTypeMappings();
     registerTopAndFiller();
     registerGenTerrainFuncs();
+
+    dont_generate_biome_terrain.insert(MESANORMAL);
+    dont_generate_biome_terrain.insert(MESABRYCE);
+    dont_generate_biome_terrain.insert(MESAFOREST);
+    dont_generate_biome_terrain.insert(MESABRYCEFOREST);
 }
 
 void ChunkGenerator::provideChunk(int x, int z, ChunkData& chunk, std::unordered_set<int>* biomes)
@@ -271,6 +285,11 @@ void ChunkGenerator::generateHeightmap(int p_185978_1_, int p_185978_2_, int p_1
             }
         }
     }
+    delete[] depthRegion;
+    delete[] mainNoiseRegion;
+    delete[] minLimitRegion;
+    delete[] maxLimitRegion;
+
 }
 
 void ChunkGenerator::generateBiomeTerrain(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
@@ -373,7 +392,8 @@ void ChunkGenerator::replaceBiomeBlocks(int64_t* rand, int x, int z, ChunkData& 
                 biome_type_to_gen_terrain_blocks_[biome](rand, primer, x * 16 + i, z * 16 + j, depthBuffer[j + i * 16]);
             else
                 throw std::runtime_error("Invalid Mapping #3");
-            generateBiomeTerrain(rand, primer, x * 16 + i, z * 16 + j, depthBuffer[j + i * 16]);
+            if(std::end(dont_generate_biome_terrain) == dont_generate_biome_terrain.find(biome))
+                generateBiomeTerrain(rand, primer, x * 16 + i, z * 16 + j, depthBuffer[j + i * 16]);
         }
     }
 }
@@ -451,9 +471,9 @@ void ChunkGenerator::registerBiomeIdTypeMappings()
     biome_id_to_biome_type_[0] = OCEAN;
     biome_id_to_biome_type_[1] = PLAINS;
     biome_id_to_biome_type_[2] = DESERT;
-    biome_id_to_biome_type_[3] = HILLS;
+    biome_id_to_biome_type_[3] = HILLSNORMAL;
     biome_id_to_biome_type_[4] = FOREST;
-    biome_id_to_biome_type_[5] = TAIGA;
+    biome_id_to_biome_type_[5] = TAIGANORMAL;
     biome_id_to_biome_type_[6] = SWAMP;
     biome_id_to_biome_type_[7] = RIVER;
     biome_id_to_biome_type_[8] = HELL;
@@ -467,8 +487,8 @@ void ChunkGenerator::registerBiomeIdTypeMappings()
     biome_id_to_biome_type_[16] = BEACH;
     biome_id_to_biome_type_[17] = DESERT;
     biome_id_to_biome_type_[18] = FOREST;
-    biome_id_to_biome_type_[19] = TAIGA;
-    biome_id_to_biome_type_[20] = TAIGA;
+    biome_id_to_biome_type_[19] = TAIGANORMAL;
+    biome_id_to_biome_type_[20] = HILLSEXTRATREES;
     biome_id_to_biome_type_[21] = JUNGLE;
     biome_id_to_biome_type_[22] = JUNGLE;
     biome_id_to_biome_type_[23] = JUNGLE;
@@ -478,23 +498,23 @@ void ChunkGenerator::registerBiomeIdTypeMappings()
     biome_id_to_biome_type_[27] = FOREST;
     biome_id_to_biome_type_[28] = FOREST;
     biome_id_to_biome_type_[29] = FOREST;
-    biome_id_to_biome_type_[30] = TAIGA;
-    biome_id_to_biome_type_[31] = TAIGA;
-    biome_id_to_biome_type_[32] = TAIGA;
-    biome_id_to_biome_type_[33] = TAIGA;
-    biome_id_to_biome_type_[34] = HILLS;
+    biome_id_to_biome_type_[30] = TAIGANORMAL;
+    biome_id_to_biome_type_[31] = TAIGANORMAL;
+    biome_id_to_biome_type_[32] = TAIGAMEGA;
+    biome_id_to_biome_type_[33] = TAIGAMEGA;
+    biome_id_to_biome_type_[34] = HILLSEXTRATREES;
     biome_id_to_biome_type_[35] = SAVANNA;
     biome_id_to_biome_type_[36] = SAVANNA;
-    biome_id_to_biome_type_[37] = MESA;
-    biome_id_to_biome_type_[38] = MESA;
-    biome_id_to_biome_type_[39] = MESA;
+    biome_id_to_biome_type_[37] = MESANORMAL;
+    biome_id_to_biome_type_[38] = MESAFOREST;
+    biome_id_to_biome_type_[39] = MESANORMAL;
 
     biome_id_to_biome_type_[127] = VOID;
     biome_id_to_biome_type_[129] = PLAINS;
     biome_id_to_biome_type_[130] = DESERT;
-    biome_id_to_biome_type_[131] = HILLS;
+    biome_id_to_biome_type_[131] = HILLSMUTATED;
     biome_id_to_biome_type_[132] = FOREST;
-    biome_id_to_biome_type_[133] = TAIGA;
+    biome_id_to_biome_type_[133] = TAIGANORMAL;
     biome_id_to_biome_type_[134] = SWAMP;
     biome_id_to_biome_type_[140] = SNOW;
     biome_id_to_biome_type_[149] = JUNGLE;
@@ -502,15 +522,15 @@ void ChunkGenerator::registerBiomeIdTypeMappings()
     biome_id_to_biome_type_[155] = FORESTMUTATED;
     biome_id_to_biome_type_[156] = FORESTMUTATED;
     biome_id_to_biome_type_[157] = FOREST;
-    biome_id_to_biome_type_[158] = TAIGA;
-    biome_id_to_biome_type_[160] = TAIGA;
-    biome_id_to_biome_type_[161] = TAIGA;
-    biome_id_to_biome_type_[162] = HILLS;
+    biome_id_to_biome_type_[158] = TAIGANORMAL;
+    biome_id_to_biome_type_[160] = TAIGAMEGA;
+    biome_id_to_biome_type_[161] = TAIGAMEGA;
+    biome_id_to_biome_type_[162] = HILLSMUTATED;
     biome_id_to_biome_type_[163] = SAVANNAMUTATED;
     biome_id_to_biome_type_[164] = SAVANNAMUTATED;
-    biome_id_to_biome_type_[165] = MESA;
-    biome_id_to_biome_type_[166] = MESA;
-    biome_id_to_biome_type_[167] = MESA;
+    biome_id_to_biome_type_[165] = MESABRYCE;
+    biome_id_to_biome_type_[166] = MESAFOREST;
+    biome_id_to_biome_type_[167] = MESANORMAL;
 }
 
 void ChunkGenerator::registerTopAndFiller()
@@ -520,9 +540,9 @@ void ChunkGenerator::registerTopAndFiller()
     biome_to_top_and_filler_[END] = std::make_pair(DIRT, DIRT);
     biome_to_top_and_filler_[FOREST] = std::make_pair(GRASS, DIRT);
     biome_to_top_and_filler_[HELL] = std::make_pair(GRASS, DIRT);
-    biome_to_top_and_filler_[HILLS] = std::make_pair(GRASS, GRASS);//dependent on noise
+    biome_to_top_and_filler_[HILLSNORMAL] = std::make_pair(GRASS, GRASS);//dependent on noise
     biome_to_top_and_filler_[JUNGLE] = std::make_pair(GRASS, DIRT);
-    biome_to_top_and_filler_[MESA] = std::make_pair(SAND, HARDCLAY);
+    biome_to_top_and_filler_[MESANORMAL] = std::make_pair(SAND, HARDCLAY);
     biome_to_top_and_filler_[MUSHROOMISLAND] = std::make_pair(MYCELIUM, DIRT);
     biome_to_top_and_filler_[OCEAN] = std::make_pair(GRASS, DIRT);
     biome_to_top_and_filler_[PLAINS] = std::make_pair(GRASS, DIRT);
@@ -531,11 +551,20 @@ void ChunkGenerator::registerTopAndFiller()
     biome_to_top_and_filler_[SNOW] = std::make_pair(SNOW_BLOCK, DIRT);
     biome_to_top_and_filler_[STONEBEACH] = std::make_pair(STONE, STONE);
     biome_to_top_and_filler_[SWAMP] = std::make_pair(GRASS, DIRT);
-    biome_to_top_and_filler_[TAIGA] = std::make_pair(GRASS, DIRT);//dep. on noise
+    biome_to_top_and_filler_[TAIGANORMAL] = std::make_pair(GRASS, DIRT);//dep. on noise
     biome_to_top_and_filler_[VOID] = std::make_pair(GRASS, DIRT);
 
     biome_to_top_and_filler_[FORESTMUTATED] = std::make_pair(GRASS, DIRT);
     biome_to_top_and_filler_[SAVANNAMUTATED] = std::make_pair(GRASS, DIRT); //dep. on noise
+
+    biome_to_top_and_filler_[HILLSEXTRATREES] = std::make_pair(GRASS, GRASS);
+    biome_to_top_and_filler_[HILLSMUTATED] = std::make_pair(GRASS, GRASS);
+
+    biome_to_top_and_filler_[MESABRYCE] = std::make_pair(SAND, HARDCLAY);
+    biome_to_top_and_filler_[MESAFOREST] = std::make_pair(SAND, HARDCLAY);
+    biome_to_top_and_filler_[MESABRYCEFOREST] = std::make_pair(SAND, HARDCLAY);
+
+    biome_to_top_and_filler_[TAIGAMEGA] = std::make_pair(GRASS, DIRT);
 }
 
 void ChunkGenerator::registerGenTerrainFuncs()
@@ -545,9 +574,9 @@ void ChunkGenerator::registerGenTerrainFuncs()
     biome_type_to_gen_terrain_blocks_[END] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->EndGTB(a, b, c, d, e); };
     biome_type_to_gen_terrain_blocks_[FOREST] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->ForestGTB(a, b, c, d, e); };
     biome_type_to_gen_terrain_blocks_[HELL] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->HellGTB(a, b, c, d, e); };
-    biome_type_to_gen_terrain_blocks_[HILLS] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->HillsGTB(a, b, c, d, e); };
+    biome_type_to_gen_terrain_blocks_[HILLSNORMAL] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->HillsGTB(a, b, c, d, e, false, false); };
     biome_type_to_gen_terrain_blocks_[JUNGLE] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->JungleGTB(a, b, c, d, e); };
-    biome_type_to_gen_terrain_blocks_[MESA] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->MesaGTB(a, b, c, d, e); };
+    biome_type_to_gen_terrain_blocks_[MESANORMAL] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->MesaGTB(a, b, c, d, e, false, false); };
     biome_type_to_gen_terrain_blocks_[MUSHROOMISLAND] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->MushroomIslandGTB(a, b, c, d, e); };
     biome_type_to_gen_terrain_blocks_[OCEAN] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->OceanGTB(a, b, c, d, e); };
     biome_type_to_gen_terrain_blocks_[PLAINS] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->PlainsGTB(a, b, c, d, e); };
@@ -556,11 +585,20 @@ void ChunkGenerator::registerGenTerrainFuncs()
     biome_type_to_gen_terrain_blocks_[SNOW] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->SnowGTB(a, b, c, d, e); };
     biome_type_to_gen_terrain_blocks_[STONEBEACH] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->StoneBeachGTB(a, b, c, d, e); };
     biome_type_to_gen_terrain_blocks_[SWAMP] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->SwampGTB(a, b, c, d, e); };
-    biome_type_to_gen_terrain_blocks_[TAIGA] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->TaigaGTB(a, b, c, d, e); };
+    biome_type_to_gen_terrain_blocks_[TAIGANORMAL] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->TaigaGTB(a, b, c, d, e, false); };
     biome_type_to_gen_terrain_blocks_[VOID] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->VoidGTB(a, b, c, d, e); };
 
     biome_type_to_gen_terrain_blocks_[FORESTMUTATED] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->ForestMutatedGTB(a, b, c, d, e); };
     biome_type_to_gen_terrain_blocks_[SAVANNAMUTATED] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->SavannaMutatedGTB(a, b, c, d, e); };
+
+    biome_type_to_gen_terrain_blocks_[HILLSEXTRATREES] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->HillsGTB(a, b, c, d, e, true, false); };
+    biome_type_to_gen_terrain_blocks_[HILLSMUTATED] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->HillsGTB(a, b, c, d, e, false, true); };
+
+    biome_type_to_gen_terrain_blocks_[MESABRYCE] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->MesaGTB(a, b, c, d, e, true, false); };
+    biome_type_to_gen_terrain_blocks_[MESAFOREST] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->MesaGTB(a, b, c, d, e, false, true); };
+    biome_type_to_gen_terrain_blocks_[MESABRYCEFOREST] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->MesaGTB(a, b, c, d, e, true, true); };
+
+    biome_type_to_gen_terrain_blocks_[TAIGAMEGA] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->TaigaGTB(a, b, c, d, e, true); };
 }
 
 void ChunkGenerator::BeachGTB(int64_t*, ChunkData&, int, int, double) {}
@@ -568,9 +606,135 @@ void ChunkGenerator::DesertGTB(int64_t*, ChunkData&, int, int, double) {}
 void ChunkGenerator::EndGTB(int64_t*, ChunkData&, int, int, double) {}
 void ChunkGenerator::ForestGTB(int64_t*, ChunkData&, int, int, double) {}
 void ChunkGenerator::HellGTB(int64_t*, ChunkData&, int, int, double) {}
-void ChunkGenerator::HillsGTB(int64_t*, ChunkData&, int, int, double noiseVal) {}
+void ChunkGenerator::HillsGTB(int64_t*, ChunkData&, int, int, double noiseVal, bool extra_trees, bool mutated)
+{
+    top_block_ = GRASS;
+    filler_block_ = GRASS;
+    if ((noiseVal < -1.0 || noiseVal > 2.0) && mutated) {
+        top_block_ = GRAVEL;
+        filler_block_ = GRAVEL;
+    }
+    else if (noiseVal > 1.0 && !extra_trees) {
+        top_block_ = STONE;
+        filler_block_ = STONE;
+    }
+}
 void ChunkGenerator::JungleGTB(int64_t*, ChunkData&, int, int, double) {}
-void ChunkGenerator::MesaGTB(int64_t*, ChunkData&, int, int, double) {}
+void ChunkGenerator::MesaGTB(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal, bool bryce, bool forest)
+{
+    double d4 = 0.0;
+    int k1;
+    int l1;
+    if (bryce) {
+        k1 = (x & -16) + (z & 15);
+        l1 = (z & -16) + (x & 15);
+        double d0 = std::min(std::abs(noiseVal), mesaPillarNoise->getValue((double)k1 * 0.25, (double)l1 * 0.25));
+        if (d0 > 0.0) {
+            double d1 = 0.001953125;
+            double d2 = std::abs(mesaPillarRoofNoise->getValue((double)k1 * 0.001953125, (double)l1 * 0.001953125));
+            d4 = d0 * d0 * 2.5;
+            double d3 = std::ceil(d2 * 50.0) + 14.0;
+            if (d4 > d3) {
+                d4 = d3;
+            }
+
+            d4 += 64.0;
+        }
+    }
+
+    k1 = x & 15;
+    l1 = z & 15;
+    int i2 = 63;
+    int iblockstate = HARDCLAY;
+    int iblockstate3 = filler_block_;
+    int k = (int)(noiseVal / 3.0 + 3.0 + nextDouble(rand) * 0.25);
+    bool flag = cos(noiseVal / 3.0 * 3.141592653589793) > 0.0;
+    int l = -1;
+    bool flag1 = false;
+    int i1 = 0;
+
+    for (int j1 = 255; j1 >= 0; --j1) {
+        if (chunkPrimerIn.getBlock(l1, j1, k1) == AIR && j1 < (int)d4) {
+            chunkPrimerIn.setBlock(l1, j1, k1, STONE);
+        }
+
+        if (j1 <= nextInt(rand, 5)) {
+            chunkPrimerIn.setBlock(l1, j1, k1, BEDROCK);
+        }
+        else if (i1 < 15 || bryce) {
+            int iblockstate1 = chunkPrimerIn.getBlock(l1, j1, k1);
+            if (iblockstate1 == AIR) {
+                l = -1;
+            }
+            else if (iblockstate1 == STONE) {
+                if (l == -1) {
+                    flag1 = false;
+                    if (k <= 0) {
+                        iblockstate = AIR;
+                        iblockstate3 = STONE;
+                    }
+                    else if (j1 >= i2 - 4 && j1 <= i2 + 1) {
+                        iblockstate = HARDCLAY;
+                        iblockstate3 = filler_block_;
+                    }
+
+                    if (j1 < i2 && (iblockstate == AIR)) {
+                        iblockstate = WATER;
+                    }
+
+                    l = k + std::max(0, j1 - i2);
+                    if (j1 >= i2 - 1) {
+                        if (forest && j1 > 86 + k * 2) {
+                            if (flag) {
+                                chunkPrimerIn.setBlock(l1, j1, k1, DIRT);
+                            }
+                            else {
+                                chunkPrimerIn.setBlock(l1, j1, k1, GRASS);
+                            }
+                        }
+                        else if (j1 > i2 + 3 + k) {
+                            int iblockstate2;
+                            if (j1 >= 64 && j1 <= 127) {
+                                if (flag) {
+                                    iblockstate2 = HARDCLAY;
+                                }
+                                else {
+                                    iblockstate2 = HARDCLAY;
+                                }
+                            }
+                            else {
+                                iblockstate2 = HARDCLAY;
+                            }
+
+                            chunkPrimerIn.setBlock(l1, j1, k1, iblockstate2);
+                        }
+                        else {
+                            chunkPrimerIn.setBlock(l1, j1, k1, top_block_);
+                            flag1 = true;
+                        }
+                    }
+                    else {
+                        chunkPrimerIn.setBlock(l1, j1, k1, iblockstate3);
+                        if (iblockstate3 == HARDCLAY) {
+                            chunkPrimerIn.setBlock(l1, j1, k1, HARDCLAY);
+                        }
+                    }
+                }
+                else if (l > 0) {
+                    --l;
+                    if (flag1) {
+                        chunkPrimerIn.setBlock(l1, j1, k1, HARDCLAY);
+                    }
+                    else {
+                        chunkPrimerIn.setBlock(l1, j1, k1, HARDCLAY);
+                    }
+                }
+
+                ++i1;
+            }
+        }
+    }
+}
 void ChunkGenerator::MushroomIslandGTB(int64_t*, ChunkData&, int, int, double) {}
 void ChunkGenerator::OceanGTB(int64_t*, ChunkData&, int, int, double) {}
 void ChunkGenerator::PlainsGTB(int64_t*, ChunkData&, int, int, double) {}
@@ -578,8 +742,50 @@ void ChunkGenerator::RiverGTB(int64_t*, ChunkData&, int, int, double) {}
 void ChunkGenerator::SavannaGTB(int64_t*, ChunkData&, int, int, double) {}
 void ChunkGenerator::SnowGTB(int64_t*, ChunkData&, int, int, double) {}
 void ChunkGenerator::StoneBeachGTB(int64_t*, ChunkData&, int, int, double) {}
-void ChunkGenerator::SwampGTB(int64_t*, ChunkData&, int, int, double) {}
-void ChunkGenerator::TaigaGTB(int64_t*, ChunkData&, int, int, double) {}
+void ChunkGenerator::SwampGTB(int64_t*, ChunkData& chunkPrimerIn, int x, int z, double)
+{
+    double d0 = grassColorNoise->getValue((double)x * 0.25, (double)z * 0.25);
+    if (d0 > 0.0) {
+        int i = x & 15;
+        int j = z & 15;
+
+        for (int k = 255; k >= 0; --k) {
+            if (chunkPrimerIn.getBlock(j, k, i) != AIR) {
+                if (k == 62 && chunkPrimerIn.getBlock(j, k, i) != WATER) {
+                    chunkPrimerIn.setBlock(j, k, i, WATER);
+                    if (d0 < 0.12) {
+                        chunkPrimerIn.setBlock(j, k + 1, i, WATER_LILY);
+                    }
+                }
+                break;
+            }
+        }
+    }
+}
+void ChunkGenerator::TaigaGTB(int64_t*, ChunkData&, int, int, double noiseVal, bool mega)
+{
+    if (mega) {
+        top_block_ = GRASS;
+        filler_block_ = DIRT;
+        if (noiseVal > 1.75) {
+            top_block_ = DIRT;
+        }
+        else if (noiseVal > -0.95) {
+            top_block_ = DIRT;
+        }
+    }
+}
 void ChunkGenerator::VoidGTB(int64_t*, ChunkData&, int, int, double) {}
 void ChunkGenerator::ForestMutatedGTB(int64_t*, ChunkData&, int, int, double) {}
-void ChunkGenerator::SavannaMutatedGTB(int64_t*, ChunkData&, int, int, double) {}
+void ChunkGenerator::SavannaMutatedGTB(int64_t*, ChunkData&, int, int, double noiseVal)
+{
+    top_block_ = GRASS;
+    filler_block_ = DIRT;
+    if (noiseVal > 1.75) {
+        top_block_ = STONE;
+        filler_block_ = STONE;
+    }
+    else if (noiseVal > -0.5) {
+        top_block_ = DIRT;
+    }
+}
