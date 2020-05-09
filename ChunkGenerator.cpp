@@ -66,7 +66,7 @@ void ChunkGenerator::provideChunk(int x, int z, ChunkData& chunk, std::unordered
 
     if (biomes)
     {
-        if (std::end(*biomes) == biomes->find(map2[0])) //only check one block in chunk, could check every one but the biome probably still doesnt exist and thats just slower
+        if (std::end(*biomes) == biomes->find(biomesForGeneration2[0])) //only check one block in chunk, could check every one but the biome probably still doesnt exist and thats just slower
             return;
     }
 
@@ -493,13 +493,13 @@ void ChunkGenerator::registerBaseAndVariation()
 float ChunkGenerator::getBaseHeight(int biome)
 {
     if (std::end(biome_to_base_and_variation_) == biome_to_base_and_variation_.find(biome))
-        throw std::runtime_error("biome_to_base_and_variation_, no mapping for biomed id " + std::to_string(biome));
+        throw std::runtime_error("biome_to_base_and_variation_, no mapping for biome id " + std::to_string(biome));
     return biome_to_base_and_variation_[biome].first;
 }
 float ChunkGenerator::getHeightVariation(int biome)
 {
     if (std::end(biome_to_base_and_variation_) == biome_to_base_and_variation_.find(biome))
-        throw std::runtime_error("biome_to_base_and_variation_, no mapping for biomed id " + std::to_string(biome));
+        throw std::runtime_error("biome_to_base_and_variation_, no mapping for biome id " + std::to_string(biome));
     return biome_to_base_and_variation_[biome].second;
 }
 

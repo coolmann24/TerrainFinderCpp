@@ -2,6 +2,7 @@
 #include "layers.h"
 #include <iostream>
 #include "ChunkGenerator.h"
+#include "Search.h"
 
 int main()
 {
@@ -24,11 +25,11 @@ int main()
 
 	//std::cout << "Biome: " << *map << std::endl;
 
-	std::cout<< std::numeric_limits<double>::is_iec559 << std::endl;
+	/*std::cout<< std::numeric_limits<double>::is_iec559 << std::endl;
 
 	ChunkGenerator generator(8675309LL);
 	ChunkData chunk;
-	generator.provideChunk(-635, 625, chunk);
+	generator.provideChunk(545, 88, chunk);
 
 	for (int i = 15; i >= 0; i--)
 	{
@@ -54,7 +55,18 @@ int main()
 			std::cout << chunk.getBlock(i, h, j) << " ";
 		}
 		std::cout << std::endl;
-	}
+	}*/
+
+	std::vector<FormationBlock> formation;
+	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::GRASS));
+	formation.push_back(FormationBlock(1, 5, 0, ChunkGenerator::GRASS)); 
+	formation.push_back(FormationBlock(0, 5, 1, ChunkGenerator::GRASS));
+	formation.push_back(FormationBlock(1, 10, 1, ChunkGenerator::GRASS));
+	formation.push_back(FormationBlock(0, 1, 0, ChunkGenerator::AIR));
+	formation.push_back(FormationBlock(1, 6, 0, ChunkGenerator::AIR));
+	formation.push_back(FormationBlock(0, 6, 1, ChunkGenerator::AIR));
+	formation.push_back(FormationBlock(1, 11, 1, ChunkGenerator::AIR));
+	search(8675309, -100, 100, 60, 90, -100, 100, formation, nullptr, true);
 
 	return 0;
 }
