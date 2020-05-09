@@ -1,15 +1,20 @@
 #include "ChunkGenerator.h"
 #include <cmath>
 
-ChunkGenerator::ChunkGenerator(int64_t world_seed, int64_t* randprimedseed):
-    minLimitPerlinNoise(randprimedseed, 16),
-    maxLimitPerlinNoise(randprimedseed, 16),
-    mainPerlinNoise(randprimedseed, 8),
-    surfaceNoise(randprimedseed, 4),
-    scaleNoise(randprimedseed, 10),
-    depthNoise(randprimedseed, 16),
-    forestNoise(randprimedseed, 8)
+ChunkGenerator::ChunkGenerator(int64_t world_seed)
 {
+    int64_t seed = world_seed;
+    int64_t seedcopy = world_seed;
+    setSeed(&seed);
+
+    minLimitPerlinNoise = std::make_unique<NoiseGeneratorOctaves>(&seed, 16);
+    maxLimitPerlinNoise = std::make_unique<NoiseGeneratorOctaves>(&seed, 16);
+    mainPerlinNoise = std::make_unique<NoiseGeneratorOctaves>(&seed, 8);
+    surfaceNoise = std::make_unique<NoiseGeneratorPerlin>(&seed, 4);
+    scaleNoise = std::make_unique<NoiseGeneratorOctaves>(&seed, 10);
+    depthNoise = std::make_unique<NoiseGeneratorOctaves>(&seed, 16);
+    forestNoise = std::make_unique<NoiseGeneratorOctaves>(&seed, 8);
+
     for (int i = -2; i <= 2; ++i)
     {
         for (int j = -2; j <= 2; ++j)
@@ -18,23 +23,18 @@ ChunkGenerator::ChunkGenerator(int64_t world_seed, int64_t* randprimedseed):
             biomeWeights[i + 2 + (j + 2) * 5] = f;
         }
     }
-    biome_base_height_ = 0.125F; //plains
-    biome_height_variation_ = 0.05F; //plains
     amplified_ = false;
 
     top_block_ = GRASS;
     filler_block_ = DIRT;
 
-    int64_t tempseed = world_seed;
-    setSeed(&tempseed);
-    mesaPillarNoise = std::make_unique<NoiseGeneratorPerlin>(&tempseed, 4);
-    mesaPillarRoofNoise = std::make_unique<NoiseGeneratorPerlin>(&tempseed, 1);
+    setSeed(&seedcopy);
+    mesaPillarNoise = std::make_unique<NoiseGeneratorPerlin>(&seedcopy, 4);
+    mesaPillarRoofNoise = std::make_unique<NoiseGeneratorPerlin>(&seedcopy, 1);
 
-    int64_t grassNoiseSeed = 2345L;
+    int64_t grassNoiseSeed = 2345LL;
     setSeed(&grassNoiseSeed);
     grassColorNoise = std::make_unique<NoiseGeneratorPerlin>(&grassNoiseSeed, 1);
-
-    initBiomes();
 
     stack_ = setupGenerator(MC_1_12);
     applySeed(&stack_, world_seed);
@@ -53,12 +53,20 @@ ChunkGenerator::ChunkGenerator(int64_t world_seed, int64_t* randprimedseed):
 void ChunkGenerator::provideChunk(int x, int z, ChunkData& chunk, std::unordered_set<int>* biomes)
 {
     
-    int* map = allocCache(&stack_.layers[L_VORONOI_ZOOM_1], 1, 1);
-    genArea(&stack_.layers[L_VORONOI_ZOOM_1], map, x*16, z*16, 1, 1);
+
+    int* map1 = allocCache(&stack_.layers[L_RIVER_MIX_4], 10, 10);//10x10??
+    genArea(&stack_.layers[L_RIVER_MIX_4], map1, x * 4 - 2, z * 4 - 2, 10, 10);
+    for (int i = 0; i < 100; i++)
+        biomesForGeneration1[i] = map1[i];
+
+    int* map2 = allocCache(&stack_.layers[L_VORONOI_ZOOM_1], 16, 16);
+    genArea(&stack_.layers[L_VORONOI_ZOOM_1], map2, x*16, z*16, 16, 16);
+    for (int i = 0; i < 256; i++)
+        biomesForGeneration2[i] = map2[i];
 
     if (biomes)
     {
-        if (std::end(*biomes) == biomes->find(*map))
+        if (std::end(*biomes) == biomes->find(map2[0])) //only check one block in chunk, could check every one but the biome probably still doesnt exist and thats just slower
             return;
     }
 
@@ -67,26 +75,22 @@ void ChunkGenerator::provideChunk(int x, int z, ChunkData& chunk, std::unordered
             for (int k = 0; k < 256; k++)
                 chunk.setBlock(i, k, j, ChunkGenerator::AIR);
 
-    if (std::end(biome_to_base_and_variation_) == biome_to_base_and_variation_.find(*map))
-        throw std::runtime_error("Mapping Doesn't Exist #0");
-    biome_base_height_ = biome_to_base_and_variation_[*map].first;
-    biome_height_variation_ = biome_to_base_and_variation_[*map].second;
-    
-    if (std::end(biome_id_to_biome_type_) == biome_id_to_biome_type_.find(*map))
-        throw std::runtime_error("Mapping Doesn't Exist #1");
-    int biome_type = biome_id_to_biome_type_[*map];
-
-    if (std::end(biome_to_top_and_filler_) == biome_to_top_and_filler_.find(biome_type))
-        throw std::runtime_error("Mapping Doesn't Exist #2");
-    top_block_ = biome_to_top_and_filler_[biome_type].first;
-    filler_block_ = biome_to_top_and_filler_[biome_type].second;
+    /*for (int i = 15; i >= 0; i--)
+    {
+        for (int j = 0; j < 16; j++)
+        {
+            std::cout << biomesForGeneration2[j*16+i] << " ";
+        }
+        std::cout << std::endl;
+    }*/
 
     int64_t rand = (int64_t)x * 341873128712L + (int64_t)z * 132897987541L;
     setSeed(&rand);
     setBlocksInChunk(x, z, chunk);
-    replaceBiomeBlocks(&rand, x, z, chunk, *map);
+    replaceBiomeBlocks(&rand, x, z, chunk);
 
-    free(map);
+    free(map1);
+    free(map2);
 }
 
 static double clampedLerp(double lowerBnd, double upperBnd, double slide)
@@ -174,12 +178,12 @@ void ChunkGenerator::setBlocksInChunk(int x, int z, ChunkData& primer)
 
 void ChunkGenerator::generateHeightmap(int p_185978_1_, int p_185978_2_, int p_185978_3_)
 {
-    double* depthRegion = depthNoise.generateNoiseOctaves(nullptr, 0, p_185978_1_, p_185978_3_, 5, 5, depthNoiseScaleX, depthNoiseScaleZ, depthNoiseScaleExponent);
+    double* depthRegion = depthNoise->generateNoiseOctaves(nullptr, 0, p_185978_1_, p_185978_3_, 5, 5, depthNoiseScaleX, depthNoiseScaleZ, depthNoiseScaleExponent);
     float f = coordinateScale;
     float f1 = heightScale;
-    double* mainNoiseRegion = mainPerlinNoise.generateNoiseOctaves(nullptr, 0, p_185978_1_, p_185978_2_, p_185978_3_, 5, 33, 5, (double)(f / mainNoiseScaleX), (double)(f1 / mainNoiseScaleY), (double)(f / mainNoiseScaleZ));
-    double* minLimitRegion = minLimitPerlinNoise.generateNoiseOctaves(nullptr, 0, p_185978_1_, p_185978_2_, p_185978_3_, 5, 33, 5, (double)f, (double)f1, (double)f);
-    double* maxLimitRegion = maxLimitPerlinNoise.generateNoiseOctaves(nullptr, 0, p_185978_1_, p_185978_2_, p_185978_3_, 5, 33, 5, (double)f, (double)f1, (double)f);
+    double* mainNoiseRegion = mainPerlinNoise->generateNoiseOctaves(nullptr, 0, p_185978_1_, p_185978_2_, p_185978_3_, 5, 33, 5, (double)(f / mainNoiseScaleX), (double)(f1 / mainNoiseScaleY), (double)(f / mainNoiseScaleZ));
+    double* minLimitRegion = minLimitPerlinNoise->generateNoiseOctaves(nullptr, 0, p_185978_1_, p_185978_2_, p_185978_3_, 5, 33, 5, (double)f, (double)f1, (double)f);
+    double* maxLimitRegion = maxLimitPerlinNoise->generateNoiseOctaves(nullptr, 0, p_185978_1_, p_185978_2_, p_185978_3_, 5, 33, 5, (double)f, (double)f1, (double)f);
     int i = 0;
     int j = 0;
 
@@ -191,13 +195,15 @@ void ChunkGenerator::generateHeightmap(int p_185978_1_, int p_185978_2_, int p_1
             float f3 = 0.0F;
             float f4 = 0.0F;
             int i1 = 2;
+            int biome = biomesForGeneration1[k + 2 + (l + 2) * 10];
 
             for (int j1 = -2; j1 <= 2; ++j1)
             {
                 for (int k1 = -2; k1 <= 2; ++k1)
                 {
-                    float f5 = biomeDepthOffset + biome_base_height_ * biomeDepthWeight;
-                    float f6 = biomeScaleOffset + biome_height_variation_ * biomeScaleWeight;
+                    int biome1 = biomesForGeneration1[k + j1 + 2 + (l + k1 + 2) * 10];
+                    float f5 = biomeDepthOffset + getBaseHeight(biome1) * biomeDepthWeight;
+                    float f6 = biomeScaleOffset + getHeightVariation(biome1) * biomeScaleWeight;
 
                     if (amplified_ && f5 > 0.0F)
                     {
@@ -207,7 +213,7 @@ void ChunkGenerator::generateHeightmap(int p_185978_1_, int p_185978_2_, int p_1
 
                     float f7 = biomeWeights[j1 + 2 + (k1 + 2) * 5] / (f5 + 2.0F);
 
-                    if (biome_base_height_ > biome_base_height_)
+                    if (getBaseHeight(biome1) > getBaseHeight(biome))
                     {
                         f7 /= 2.0F;
                     }
@@ -379,23 +385,41 @@ void ChunkGenerator::generateBiomeTerrain(int64_t* rand, ChunkData& chunkPrimerI
     }
 }
 
-void ChunkGenerator::replaceBiomeBlocks(int64_t* rand, int x, int z, ChunkData& primer, int biome)
+void ChunkGenerator::replaceBiomeBlocks(int64_t* rand, int x, int z, ChunkData& primer)
 {
     double d0 = 0.03125;
-    double* depthBuffer = surfaceNoise.getRegion(nullptr, 0, (double)(x * 16), (double)(z * 16), 16, 16, 0.0625, 0.0625, 1.0);
+    double* depthBuffer = surfaceNoise->getRegion(nullptr, 0, (double)(x * 16), (double)(z * 16), 16, 16, 0.0625, 0.0625, 1.0);
 
     for (int i = 0; i < 16; ++i)
     {
         for (int j = 0; j < 16; ++j)
         {
-            if (std::end(biome_type_to_gen_terrain_blocks_) != biome_type_to_gen_terrain_blocks_.find(biome))
-                biome_type_to_gen_terrain_blocks_[biome](rand, primer, x * 16 + i, z * 16 + j, depthBuffer[j + i * 16]);
+            int biome = biomesForGeneration2[j + i * 16];
+            int biometype;
+            if (std::end(biome_id_to_biome_type_) != biome_id_to_biome_type_.find(biome))
+                biometype = biome_id_to_biome_type_[biome];
             else
-                throw std::runtime_error("Invalid Mapping #3");
-            if(std::end(dont_generate_biome_terrain) == dont_generate_biome_terrain.find(biome))
+                throw std::runtime_error("biome_id_to_biome_type_, invalid mapping for " + std::to_string(biome));
+
+            if (std::end(biome_to_top_and_filler_) != biome_to_top_and_filler_.find(biometype))
+            {
+                top_block_ = biome_to_top_and_filler_[biometype].first;
+                filler_block_ = biome_to_top_and_filler_[biometype].second;
+            }
+            else
+                throw std::runtime_error("biome_to_top_and_filler_, invalid mapping for " + std::to_string(biometype));
+
+            if (std::end(biome_type_to_gen_terrain_blocks_) != biome_type_to_gen_terrain_blocks_.find(biometype))
+                biome_type_to_gen_terrain_blocks_[biometype](rand, primer, x * 16 + i, z * 16 + j, depthBuffer[j + i * 16]);
+            else
+                throw std::runtime_error("biome_type_to_gen_terrain_blocks_, invalid mapping for " + std::to_string(biometype));
+
+            if(std::end(dont_generate_biome_terrain) == dont_generate_biome_terrain.find(biometype))
                 generateBiomeTerrain(rand, primer, x * 16 + i, z * 16 + j, depthBuffer[j + i * 16]);
         }
     }
+
+    delete[] depthBuffer;
 }
 
 void ChunkGenerator::registerBaseAndVariation()
@@ -464,6 +488,19 @@ void ChunkGenerator::registerBaseAndVariation()
     biome_to_base_and_variation_[166] = std::make_pair(0.45F, 0.3F);
     biome_to_base_and_variation_[167] = std::make_pair(0.45F, 0.3F);
 
+}
+
+float ChunkGenerator::getBaseHeight(int biome)
+{
+    if (std::end(biome_to_base_and_variation_) == biome_to_base_and_variation_.find(biome))
+        throw std::runtime_error("biome_to_base_and_variation_, no mapping for biomed id " + std::to_string(biome));
+    return biome_to_base_and_variation_[biome].first;
+}
+float ChunkGenerator::getHeightVariation(int biome)
+{
+    if (std::end(biome_to_base_and_variation_) == biome_to_base_and_variation_.find(biome))
+        throw std::runtime_error("biome_to_base_and_variation_, no mapping for biomed id " + std::to_string(biome));
+    return biome_to_base_and_variation_[biome].second;
 }
 
 void ChunkGenerator::registerBiomeIdTypeMappings()

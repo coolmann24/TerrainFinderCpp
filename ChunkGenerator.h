@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <functional>
 #include <memory>
+#include <string>
 
 class ChunkGenerator
 {
@@ -79,21 +80,22 @@ private:
     static const constexpr float upperLimitScale = 512.0F;
     static const constexpr float lowerLimitScale = 512.0F;
 
-    float biome_base_height_, biome_height_variation_;
     int top_block_, filler_block_;
     bool amplified_;
-    NoiseGeneratorOctaves minLimitPerlinNoise;
-    NoiseGeneratorOctaves maxLimitPerlinNoise;
-    NoiseGeneratorOctaves mainPerlinNoise;
-    NoiseGeneratorPerlin surfaceNoise;
+    std::unique_ptr<NoiseGeneratorOctaves> minLimitPerlinNoise;
+    std::unique_ptr<NoiseGeneratorOctaves> maxLimitPerlinNoise;
+    std::unique_ptr<NoiseGeneratorOctaves> mainPerlinNoise;
+    std::unique_ptr<NoiseGeneratorPerlin> surfaceNoise;
     std::unique_ptr<NoiseGeneratorPerlin> mesaPillarNoise;
     std::unique_ptr<NoiseGeneratorPerlin> mesaPillarRoofNoise;
     std::unique_ptr<NoiseGeneratorPerlin> grassColorNoise;
-    NoiseGeneratorOctaves scaleNoise;
-    NoiseGeneratorOctaves depthNoise;
-    NoiseGeneratorOctaves forestNoise;
+    std::unique_ptr<NoiseGeneratorOctaves> scaleNoise;
+    std::unique_ptr<NoiseGeneratorOctaves> depthNoise;
+    std::unique_ptr<NoiseGeneratorOctaves> forestNoise;
     double heightMap[825];
     float biomeWeights[25];
+    int biomesForGeneration1[100];
+    int biomesForGeneration2[256];
 
     LayerStack stack_;
     std::unordered_map<int, std::pair<float, float>> biome_to_base_and_variation_;
@@ -101,6 +103,9 @@ private:
     std::unordered_map<int, int> biome_id_to_biome_type_;
 
     void registerBaseAndVariation();
+    float getBaseHeight(int biome);
+    float getHeightVariation(int biome);
+
     void registerTopAndFiller();
     void registerBiomeIdTypeMappings();
 
@@ -113,14 +118,14 @@ private:
 
     
 public:
-    ChunkGenerator(int64_t world_seed, int64_t* randprimedseed);
+    ChunkGenerator(int64_t world_seed);
     void provideChunk(int x, int z, ChunkData& chunk, std::unordered_set<int>* biomes = nullptr);
 
 private:
     void setBlocksInChunk(int x, int z, ChunkData& primer);
     void generateHeightmap(int p_185978_1_, int p_185978_2_, int p_185978_3_);
     void generateBiomeTerrain(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
-    void replaceBiomeBlocks(int64_t* rand, int x, int z, ChunkData& primer, int biome);
+    void replaceBiomeBlocks(int64_t* rand, int x, int z, ChunkData& primer);
 
 private:
 
