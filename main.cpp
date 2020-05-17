@@ -66,7 +66,8 @@ int main()
 	formation.push_back(FormationBlock(1, 6, 0, ChunkGenerator::AIR));
 	formation.push_back(FormationBlock(0, 6, 1, ChunkGenerator::AIR));
 	formation.push_back(FormationBlock(1, 11, 1, ChunkGenerator::AIR));
-	search(8675309, -100, 100, 60, 90, -100, 100, formation, nullptr, true);
+	TerrainSearchFunc func = cachedSearch;
+	threadedSearch(func, 2, 8675309L, -100, 100, 60, 90, -100, 100, formation, std::unordered_set<int>(), true);
 
 	return 0;
 }

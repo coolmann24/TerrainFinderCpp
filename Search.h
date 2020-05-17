@@ -3,6 +3,9 @@
 #include "ChunkGenerator.h"
 #include <vector>
 #include <iostream>
+#include <thread>
+#include <functional>
+#include <chrono>
 
 class FormationBlock
 {
@@ -25,7 +28,8 @@ private:
 
 };
 
-void search(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, std::unordered_set<int>* biomes, bool allRotations = true);
-//void loopSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, std::unordered_set<int>* biomes, bool allRotations = true) {}
-//void cachedSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, std::unordered_set<int>* biomes, bool allRotations = true) {}
-void threadedSearch(int64_t seed, int numThreads, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, std::unordered_set<int>* biomes, bool allRotations = true);
+using TerrainSearchFunc = std::function <void(int64_t, int, int, int, int, int, int, std::vector<FormationBlock>, std::unordered_set<int>*, bool)>;
+
+void search(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations);
+void cachedSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations); //twice as fast at the cost of a shitload of memory
+void threadedSearch(TerrainSearchFunc func, int numThreads, int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, std::unordered_set<int> biomes, bool allRotations);
