@@ -476,10 +476,11 @@ void ChunkGenerator::replaceBiomeBlocks(int64_t* rand, int x, int z, ChunkData& 
             }
             else
                 throw std::runtime_error("ternary_to_blocktypes_, invalid mapping for " + std::to_string(ternary));
+            
+            if (biome_to_surface_builder_.end() != biome_to_surface_builder_.find(biome))
+                surface_builder_to_additions_func_[biome_to_surface_builder_[biome]](rand, primer, x * 16 + i, z * 16 + j, depthBuffer[j + i * 16]);
 
-            surface_builder_to_additions_func_[biome_to_surface_builder_[biome]](rand, primer, x * 16 + i, z * 16 + j, depthBuffer[j + i * 16]);
-
-            if (std::end(no_def_surface_building_) == no_def_surface_building_.find(biome_to_surface_builder_[biome]))
+            if (biome_to_surface_builder_.end() == biome_to_surface_builder_.find(biome) || std::end(no_def_surface_building_) == no_def_surface_building_.find(biome_to_surface_builder_[biome]))
             {
                 if (version_ == MC_1_12)
                 {
