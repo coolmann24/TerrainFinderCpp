@@ -39,7 +39,7 @@ void search(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, i
 		}
 	}
 
-	ChunkGenerator generator(seed);
+	ChunkGenerator generator(seed, MC_1_12);
 	ChunkData* chunk = new ChunkData();
 	ChunkData* chunkxp = new ChunkData();
 	ChunkData* chunkzp = new ChunkData();
@@ -141,7 +141,7 @@ void cachedSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zm
 		}
 	}
 
-	ChunkGenerator generator(seed);
+	ChunkGenerator generator(seed, MC_1_13);
 	std::unordered_map<int64_t, std::pair<int, std::shared_ptr<ChunkData>>> chunk_cache; //int counts uses (4 total), once accessed 3 additional times delete from cache (except if chunk on search edge uses is probably 2)
 	std::shared_ptr<ChunkData> chunk, chunkxp, chunkzp, chunkxzp;
 

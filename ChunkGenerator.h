@@ -30,37 +30,48 @@ public:
     static const constexpr int SNOW_BLOCK = 10;
     static const constexpr int WATER_LILY = 11;
     static const constexpr int SANDSTONE = 12;
+    static const constexpr int PODZOL = 13;
+    static const constexpr int COARSE_DIRT = 14;
+    static const constexpr int RED_SAND = 15;
+    static const constexpr int NETHERRACK = 16;
+    static const constexpr int SOUL_SAND = 17;
+    static const constexpr int END_STONE = 18;
+    static const constexpr int RED_SANDSTONE = 19;
 
-    static const constexpr int BEACH = 0;
-    static const constexpr int DESERT = 1;
-    static const constexpr int END = 2;
-    static const constexpr int FOREST = 3;
-    static const constexpr int HELL = 4;
-    static const constexpr int HILLSNORMAL = 5;
-    static const constexpr int JUNGLE = 6;
-    static const constexpr int MESANORMAL = 7;
-    static const constexpr int MUSHROOMISLAND = 8;
-    static const constexpr int OCEAN = 9;
-    static const constexpr int PLAINS = 10;
-    static const constexpr int RIVER = 11;
-    static const constexpr int SAVANNA = 12;
-    static const constexpr int SNOW = 13;
-    static const constexpr int STONEBEACH = 14;
-    static const constexpr int SWAMP = 15;
-    static const constexpr int TAIGANORMAL = 16;
-    static const constexpr int VOID = 17;
+    //"ternary surface" ids
+    static const constexpr int AIR_T = 0;
+    static const constexpr int PODZOL_T = 1;
+    static const constexpr int GRAVEL_T = 2;
+    static const constexpr int GRASS_T = 3;
+    static const constexpr int DIRT_T = 4;
+    static const constexpr int STONE_T = 5;
+    static const constexpr int COARSE_DIRT_T = 6;
+    static const constexpr int SAND_T = 7;
+    static const constexpr int GRASS_SAND_UNDERWATER_T = 8;
+    static const constexpr int SAND_SAND_UNDERWATER_T = 9;
+    static const constexpr int MESA_T = 10;
+    static const constexpr int MYCELIUM_T = 11;
+    static const constexpr int NETHER_T = 12;
+    static const constexpr int SOUL_SAND_T = 13;
+    static const constexpr int END_T = 14;
+    static const constexpr int CRIMSON_NYLIUM_T = 15;
+    static const constexpr int WARPED_NYLIUM_T = 16;
+    static const constexpr int ICE_SPIKES_T = 17;
 
-    static const constexpr int FORESTMUTATED = 18;
-    static const constexpr int SAVANNAMUTATED = 19;
-
-    static const constexpr int HILLSEXTRATREES = 20;
-    static const constexpr int HILLSMUTATED = 21;
-
-    static const constexpr int MESABRYCE = 22;
-    static const constexpr int MESAFOREST = 23;
-    static const constexpr int MESABRYCEFOREST = 24;
-
-    static const constexpr int TAIGAMEGA = 25;
+    //"surface builder" ids
+    static const constexpr int MOUNTAIN_S = 0; //mountains used to be hills in 1.12
+    static const constexpr int SHATTERED_SAVANNA_S = 1;
+    static const constexpr int GRAVELLY_MOUNTAIN_S = 2;
+    static const constexpr int GIANT_TREE_TAIGA_S = 3;
+    static const constexpr int SWAMP_S = 4;
+    static const constexpr int MESA_S = 5;
+    static const constexpr int WOODED_MESA_S = 6;
+    static const constexpr int ERODED_MESA_S = 7;
+    static const constexpr int FROZEN_OCEAN_S = 8;
+    static const constexpr int NETHER_S = 9;
+    static const constexpr int NETHER_FOREST_S = 10;
+    static const constexpr int SOUL_SAND_VALLEY_S = 11;
+    static const constexpr int BASALT_DELTAS_S = 12;
 
 private:
     static const constexpr float depthNoiseScaleX = 200.0;
@@ -80,7 +91,7 @@ private:
     static const constexpr float upperLimitScale = 512.0F;
     static const constexpr float lowerLimitScale = 512.0F;
 
-    int top_block_, filler_block_;
+    int top_block_, filler_block_, underwater_block_;
     bool amplified_;
     std::unique_ptr<NoiseGeneratorOctaves> minLimitPerlinNoise;
     std::unique_ptr<NoiseGeneratorOctaves> maxLimitPerlinNoise;
@@ -99,56 +110,53 @@ private:
 
     LayerStack stack_;
     std::unordered_map<int, std::pair<float, float>> biome_to_base_and_variation_;
-    std::unordered_map<int, std::pair<int, int>> biome_to_top_and_filler_;
-    std::unordered_map<int, int> biome_id_to_biome_type_;
+
+    std::unordered_map<int, int> biome_to_ternary_;
+    std::unordered_map<int, std::tuple<int, int, int>> ternary_to_blocktypes_; //top, filler, and underwater blocks
 
     void registerBaseAndVariation();
     float getBaseHeight(int biome);
     float getHeightVariation(int biome);
 
-    void registerTopAndFiller();
-    void registerBiomeIdTypeMappings();
+    void registerTernaryBlocks();
+    void registerTernaryIds();
 
-    using GenTerrainBlocksFunc = std::function<void(int64_t*, ChunkData&, int, int, double)>;
-    std::unordered_map<int, GenTerrainBlocksFunc> biome_type_to_gen_terrain_blocks_;
+    using SurfaceBuilderAdditionsFunc = std::function<void(int64_t*, ChunkData&, int, int, double)>;
+    std::unordered_map<int, int> biome_to_surface_builder_;
+    std::unordered_map<int, SurfaceBuilderAdditionsFunc> surface_builder_to_additions_func_;
+    //1.12 had a 'genTerrainBlocks' function for additional biome generation, but 1.16- has 'surface builders', of which most use the 'default' which generateBiomeTerrain implements
+    //mesa still overrides this generateBiomeTerrain completely, frozen ocean too but dont support now
 
-    void registerGenTerrainFuncs();
+    void registerSurfaceBuilderIds();
+    void registerSurfaceBuilderFuncs(MCversion version);
 
-    std::unordered_set<int> dont_generate_biome_terrain;//only for mesa
+    std::unordered_set<int> no_def_surface_building_;//only for mesa
+
+    MCversion version_;
 
     
 public:
-    ChunkGenerator(int64_t world_seed);
-    void provideChunk(int x, int z, ChunkData& chunk, std::unordered_set<int>* biomes = nullptr);
+    ChunkGenerator(int64_t world_seed, MCversion version);
+    void provideChunk(int x, int z, ChunkData& chunk, std::unordered_set<int>* biomes = nullptr); //NOT THREAD SAFE
 
 private:
     void setBlocksInChunk(int x, int z, ChunkData& primer);
     void generateHeightmap(int p_185978_1_, int p_185978_2_, int p_185978_3_);
-    void generateBiomeTerrain(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
+    void generateBiomeTerrain112(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
+    void defaultSurfaceBuild113(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
+    void buildBedrock113(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
+    void buildBedrock114(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
     void replaceBiomeBlocks(int64_t* rand, int x, int z, ChunkData& primer);
 
 private:
 
-    void BeachGTB(int64_t*, ChunkData&, int, int, double);
-    void DesertGTB(int64_t*, ChunkData&, int, int, double);
-    void EndGTB(int64_t*, ChunkData&, int, int, double);
-    void ForestGTB(int64_t*, ChunkData&, int, int, double);
-    void HellGTB(int64_t*, ChunkData&, int, int, double);
-    void HillsGTB(int64_t*, ChunkData&, int, int, double, bool, bool);
-    void JungleGTB(int64_t*, ChunkData&, int, int, double);
-    void MesaGTB(int64_t*, ChunkData&, int, int, double, bool, bool);
-    void MushroomIslandGTB(int64_t*, ChunkData&, int, int, double);
-    void OceanGTB(int64_t*, ChunkData&, int, int, double);
-    void PlainsGTB(int64_t*, ChunkData&, int, int, double);
-    void RiverGTB(int64_t*, ChunkData&, int, int, double);
-    void SavannaGTB(int64_t*, ChunkData&, int, int, double);
-    void SnowGTB(int64_t*, ChunkData&, int, int, double);
-    void StoneBeachGTB(int64_t*, ChunkData&, int, int, double);
-    void SwampGTB(int64_t*, ChunkData&, int, int, double);
-    void TaigaGTB(int64_t*, ChunkData&, int, int, double, bool);
-    void VoidGTB(int64_t*, ChunkData&, int, int, double);
-
-    void ForestMutatedGTB(int64_t*, ChunkData&, int, int, double);
-    void SavannaMutatedGTB(int64_t*, ChunkData&, int, int, double);
+    void HillsMountainsSB(int64_t*, ChunkData&, int, int, double, bool);//1.12 called hills, mountains 1.13+
+    void MesaSB112(int64_t*, ChunkData&, int, int, double, bool, bool);//there is slight variation in mesa generation between 1.12/1.13+
+    void MesaDefSB113(int64_t*, ChunkData&, int, int, double);
+    void MesaWoodedSB113(int64_t*, ChunkData&, int, int, double);
+    void MesaErodedSB113(int64_t*, ChunkData&, int, int, double);
+    void SwampSB(int64_t*, ChunkData&, int, int, double);
+    void TaigaSB(int64_t*, ChunkData&, int, int, double);
+    void SavannaMutatedSB(int64_t*, ChunkData&, int, int, double);
 
 };

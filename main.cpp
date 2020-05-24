@@ -25,11 +25,11 @@ int main()
 
 	//std::cout << "Biome: " << *map << std::endl;
 
-	/*std::cout<< std::numeric_limits<double>::is_iec559 << std::endl;
+	std::cout<< std::numeric_limits<double>::is_iec559 << std::endl;
 
-	ChunkGenerator generator(8675309LL);
+	ChunkGenerator generator(8675309LL, MC_1_13);
 	ChunkData chunk;
-	generator.provideChunk(545, 88, chunk);
+	generator.provideChunk(26, 37, chunk);
 
 	for (int i = 15; i >= 0; i--)
 	{
@@ -55,9 +55,9 @@ int main()
 			std::cout << chunk.getBlock(i, h, j) << " ";
 		}
 		std::cout << std::endl;
-	}*/
+	}
 
-	std::vector<FormationBlock> formation;
+	/*std::vector<FormationBlock> formation;
 	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::GRASS));
 	formation.push_back(FormationBlock(1, 5, 0, ChunkGenerator::GRASS)); 
 	formation.push_back(FormationBlock(0, 5, 1, ChunkGenerator::GRASS));
@@ -67,7 +67,26 @@ int main()
 	formation.push_back(FormationBlock(0, 6, 1, ChunkGenerator::AIR));
 	formation.push_back(FormationBlock(1, 11, 1, ChunkGenerator::AIR));
 	TerrainSearchFunc func = cachedSearch;
-	threadedSearch(func, 2, 8675309L, -100, 100, 60, 90, -100, 100, formation, std::unordered_set<int>(), true);
+	threadedSearch(func, 2, 8675309L, -100, 100, 60, 90, -100, 100, formation, std::unordered_set<int>(), true);*/
+	//cachedSearch(8675309L, -100, 100, 60, 90, -100, 100, formation, nullptr, true);
 
 	return 0;
 }
+
+/*
+TODO:
+Extra biomes for new versions
+--different between all 1.13, 1.14, 1.15??
+--bedrock gen probably wrong for existing biomes
+
+Map biome id to surface builder type and block config type separately
+
+hills GTB == mountain SB ???
+
+hills -> mountains
+
+
+lib generates stone but actual grass, and correct for 1.12
+-noiseVal gen bad?
+-swamp SB call screwed up?
+*/
