@@ -12,3 +12,18 @@ public:
 private:
 	int blocks_[16][256][16];
 };
+
+class ChunkHeightmap
+{
+public:
+	ChunkHeightmap() {};
+	~ChunkHeightmap() {};
+
+	int getHeightmap(int, int);
+	void setHeightmap(int, int, int);
+
+	int getBlock(int, int, int);
+
+private:
+	int heightmap_[16][16];
+};

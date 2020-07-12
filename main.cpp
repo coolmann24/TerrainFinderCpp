@@ -25,11 +25,15 @@ int main()
 
 	//std::cout << "Biome: " << *map << std::endl;
 
-	std::cout<< std::numeric_limits<double>::is_iec559 << std::endl;
+	/*std::cout<< std::numeric_limits<double>::is_iec559 << std::endl;
 
-	ChunkGenerator generator(8675309LL, MC_1_13);
+	ChunkGenerator generator(8675309, MC_1_12);
 	ChunkData chunk;
-	generator.provideChunk(26, 37, chunk);
+	ChunkHeightmap chunkheight;
+	generator.provideChunk(-11, -3, chunk);*/
+	//generator.provideChunkHeightmap(-11, -3, chunkheight, 1/*plains*/);
+
+	/*std::cout << std::endl;
 
 	for (int i = 15; i >= 0; i--)
 	{
@@ -57,17 +61,34 @@ int main()
 		std::cout << std::endl;
 	}
 
-	/*std::vector<FormationBlock> formation;
-	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::GRASS));
+	for (int i = 15; i >= 0; i--)
+	{
+		for (int j = 0; j < 16; j++)
+		{
+			std::cout << chunkheight.getHeightmap(i, j) << " ";
+		}
+		std::cout << std::endl;;
+	}*/
+
+	std::vector<FormationBlock> formation;
+	/*formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::GRASS));
 	formation.push_back(FormationBlock(1, 5, 0, ChunkGenerator::GRASS)); 
 	formation.push_back(FormationBlock(0, 5, 1, ChunkGenerator::GRASS));
 	formation.push_back(FormationBlock(1, 10, 1, ChunkGenerator::GRASS));
 	formation.push_back(FormationBlock(0, 1, 0, ChunkGenerator::AIR));
 	formation.push_back(FormationBlock(1, 6, 0, ChunkGenerator::AIR));
 	formation.push_back(FormationBlock(0, 6, 1, ChunkGenerator::AIR));
-	formation.push_back(FormationBlock(1, 11, 1, ChunkGenerator::AIR));
-	TerrainSearchFunc func = cachedSearch;
-	threadedSearch(func, 2, 8675309L, -100, 100, 60, 90, -100, 100, formation, std::unordered_set<int>(), true);*/
+	formation.push_back(FormationBlock(1, 11, 1, ChunkGenerator::AIR));*/
+	formation.push_back(FormationBlock(0, 0, 0, 1));
+	formation.push_back(FormationBlock(1, 5, 0, 1));
+	formation.push_back(FormationBlock(0, 5, 1, 1));
+	formation.push_back(FormationBlock(1, 10, 1, 1));
+	formation.push_back(FormationBlock(0, 1, 0, 0));
+	formation.push_back(FormationBlock(1, 6, 0, 0));
+	formation.push_back(FormationBlock(0, 6, 1, 0));
+	formation.push_back(FormationBlock(1, 11, 1, 0));
+	HeightmapSearchFunc func = cachedHeightmapSearch;
+	threadedHeightmapSearch(func, 2, 8675309L, -100, 100, 60, 90, -100, 100, formation, 1, true);
 	//cachedSearch(8675309L, -100, 100, 60, 90, -100, 100, formation, nullptr, true);
 
 	return 0;

@@ -115,8 +115,6 @@ private:
     std::unordered_map<int, std::tuple<int, int, int>> ternary_to_blocktypes_; //top, filler, and underwater blocks
 
     void registerBaseAndVariation();
-    float getBaseHeight(int biome);
-    float getHeightVariation(int biome);
 
     void registerTernaryBlocks();
     void registerTernaryIds();
@@ -137,11 +135,19 @@ private:
     
 public:
     ChunkGenerator(int64_t world_seed, MCversion version);
-    void provideChunk(int x, int z, ChunkData& chunk, std::unordered_set<int>* biomes = nullptr); //NOT THREAD SAFE
+    bool provideChunk(int x, int z, ChunkData& chunk, std::unordered_set<int>* biomes = nullptr); //NONE OF THESE ARE THREAD SAFE
+    void provideChunkHeightmap(int x, int z, ChunkHeightmap& chunk, int biome);
+    void provideChunkHeightmap(int x, int z, ChunkHeightmap& chunk, std::pair<float, float> base_and_variation);
+
+    float getBaseHeight(int biome);
+    float getHeightVariation(int biome);
 
 private:
     void setBlocksInChunk(int x, int z, ChunkData& primer);
+    inline bool terrainAtHeight(int x, int z, int y);
+    inline int terrainHeight(int x, int z, int seed);
     void generateHeightmap(int p_185978_1_, int p_185978_2_, int p_185978_3_);
+    void generateHeightmap(int p_185978_1_, int p_185978_2_, int p_185978_3_, std::pair<float, float> base_and_variation);
     void generateBiomeTerrain112(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
     void defaultSurfaceBuild113(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
     void buildBedrock113(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
