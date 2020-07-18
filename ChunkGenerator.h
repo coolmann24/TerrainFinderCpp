@@ -136,8 +136,7 @@ private:
 public:
     ChunkGenerator(int64_t world_seed, MCversion version);
     bool provideChunk(int x, int z, ChunkData& chunk, std::unordered_set<int>* biomes = nullptr); //NONE OF THESE ARE THREAD SAFE
-    void provideChunkHeightmap(int x, int z, ChunkHeightmap& chunk, int biome);
-    void provideChunkHeightmap(int x, int z, ChunkHeightmap& chunk, std::pair<float, float> base_and_variation);
+    bool provideChunkHeightmap(int x, int z, ChunkHeightmap& chunk, std::unordered_set<int>* biomes = nullptr);
 
     float getBaseHeight(int biome);
     float getHeightVariation(int biome);

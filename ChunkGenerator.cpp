@@ -66,10 +66,15 @@ bool ChunkGenerator::provideChunk(int x, int z, ChunkData& chunk, std::unordered
     for (int i = 0; i < 256; i++)
         biomesForGeneration2[i] = map2[i];
 
+    free(map1);
+    free(map2);
+
     if (biomes)
     {
         if (std::end(*biomes) == biomes->find(biomesForGeneration2[0])) //only check one block in chunk, could check every one but the biome probably still doesnt exist and thats just slower
+        {
             return false;
+        }
     }
 
     for (int i = 0; i < 16; i++)
@@ -90,9 +95,6 @@ bool ChunkGenerator::provideChunk(int x, int z, ChunkData& chunk, std::unordered
     setSeed(&rand);
     setBlocksInChunk(x, z, chunk);
     replaceBiomeBlocks(&rand, x, z, chunk);
-
-    free(map1);
-    free(map2);
 
     return true;
 }
@@ -301,16 +303,30 @@ int ChunkGenerator::terrainHeight(int x, int z, int seed)
     return lvt + (l2 + 1) * d16 > 0.0;
 }*/
 
-void ChunkGenerator::provideChunkHeightmap(int x, int z, ChunkHeightmap& chunk, int biome)
+bool ChunkGenerator::provideChunkHeightmap(int x, int z, ChunkHeightmap& chunk, std::unordered_set<int>* biomes)
 {
-    if (std::end(biome_to_base_and_variation_) == biome_to_base_and_variation_.find(biome))
-        throw std::runtime_error("provideChunkHeightmap(), invalid biome input");
-    provideChunkHeightmap(x, z, chunk, biome_to_base_and_variation_[biome]);
-}
+    int* map1 = allocCache(&stack_.layers[L_RIVER_MIX_4], 10, 10);//10x10??
+    genArea(&stack_.layers[L_RIVER_MIX_4], map1, x * 4 - 2, z * 4 - 2, 10, 10);
+    for (int i = 0; i < 100; i++)
+        biomesForGeneration1[i] = map1[i];
 
-void ChunkGenerator::provideChunkHeightmap(int x, int z, ChunkHeightmap& chunk, std::pair<float, float> base_and_variation)
-{
-    generateHeightmap(x * 4, 0, z * 4, base_and_variation);
+    int* map2 = allocCache(&stack_.layers[L_VORONOI_ZOOM_1], 16, 16);
+    genArea(&stack_.layers[L_VORONOI_ZOOM_1], map2, x * 16, z * 16, 16, 16);
+    for (int i = 0; i < 256; i++)
+        biomesForGeneration2[i] = map2[i];
+
+    free(map1);
+    free(map2);
+
+    if (biomes)
+    {
+        if (std::end(*biomes) == biomes->find(biomesForGeneration2[0])) //only check one block in chunk, could check every one but the biome probably still doesnt exist and thats just slower
+        {
+            return false;
+        }
+    }
+
+    generateHeightmap(x * 4, 0, z * 4);
 
     //height seeded search, adjacent location will have similar or same height
 
@@ -325,7 +341,7 @@ void ChunkGenerator::provideChunkHeightmap(int x, int z, ChunkHeightmap& chunk, 
         }
         seed = chunk.getHeightmap(xc, 0);
     }
-
+    return true;
 }
 
 void ChunkGenerator::generateHeightmap(int p_185978_1_, int p_185978_2_, int p_185978_3_)
@@ -369,123 +385,6 @@ void ChunkGenerator::generateHeightmap(int p_185978_1_, int p_185978_2_, int p_1
                     {
                         f7 /= 2.0F;
                     }
-
-                    f2 += f6 * f7;
-                    f3 += f5 * f7;
-                    f4 += f7;
-                }
-            }
-
-            f2 = f2 / f4;
-            f3 = f3 / f4;
-            f2 = f2 * 0.9F + 0.1F;
-            f3 = (f3 * 4.0F - 1.0F) / 8.0F;
-            double d7 = depthRegion[j] / 8000.0;
-
-            if (d7 < 0.0)
-            {
-                d7 = -d7 * 0.3;
-            }
-
-            d7 = d7 * 3.0 - 2.0;
-
-            if (d7 < 0.0)
-            {
-                d7 = d7 / 2.0;
-
-                if (d7 < -1.0)
-                {
-                    d7 = -1.0;
-                }
-
-                d7 = d7 / 1.4;
-                d7 = d7 / 2.0;
-            }
-            else
-            {
-                if (d7 > 1.0)
-                {
-                    d7 = 1.0;
-                }
-
-                d7 = d7 / 8.0;
-            }
-
-            ++j;
-            double d8 = (double)f3;
-            double d9 = (double)f2;
-            d8 = d8 + d7 * 0.2;
-            d8 = d8 * (double)baseSize / 8.0;
-            double d0 = (double)baseSize + d8 * 4.0;
-
-            for (int l1 = 0; l1 < 33; ++l1)
-            {
-                double d1 = ((double)l1 - d0) * (double)stretchY * 128.0 / 256.0 / d9;
-
-                if (d1 < 0.0)
-                {
-                    d1 *= 4.0;
-                }
-
-                double d2 = minLimitRegion[i] / (double)lowerLimitScale;
-                double d3 = maxLimitRegion[i] / (double)upperLimitScale;
-                double d4 = (mainNoiseRegion[i] / 10.0 + 1.0) / 2.0;
-                double d5 = clampedLerp(d2, d3, d4) - d1;
-
-                if (l1 > 29)
-                {
-                    double d6 = (double)((float)(l1 - 29) / 3.0F);
-                    d5 = d5 * (1.0 - d6) + -10.0 * d6;
-                }
-
-                heightMap[i] = d5;
-                ++i;
-            }
-        }
-    }
-    delete[] depthRegion;
-    delete[] mainNoiseRegion;
-    delete[] minLimitRegion;
-    delete[] maxLimitRegion;
-
-}
-
-void ChunkGenerator::generateHeightmap(int p_185978_1_, int p_185978_2_, int p_185978_3_, std::pair<float, float> base_and_variation)
-{
-    double* depthRegion = depthNoise->generateNoiseOctaves(nullptr, 0, p_185978_1_, p_185978_3_, 5, 5, depthNoiseScaleX, depthNoiseScaleZ, depthNoiseScaleExponent);
-    float f = coordinateScale;
-    float f1 = heightScale;
-    double* mainNoiseRegion = mainPerlinNoise->generateNoiseOctaves(nullptr, 0, p_185978_1_, p_185978_2_, p_185978_3_, 5, 33, 5, (double)(f / mainNoiseScaleX), (double)(f1 / mainNoiseScaleY), (double)(f / mainNoiseScaleZ));
-    double* minLimitRegion = minLimitPerlinNoise->generateNoiseOctaves(nullptr, 0, p_185978_1_, p_185978_2_, p_185978_3_, 5, 33, 5, (double)f, (double)f1, (double)f);
-    double* maxLimitRegion = maxLimitPerlinNoise->generateNoiseOctaves(nullptr, 0, p_185978_1_, p_185978_2_, p_185978_3_, 5, 33, 5, (double)f, (double)f1, (double)f);
-    int i = 0;
-    int j = 0;
-
-    for (int k = 0; k < 5; ++k)
-    {
-        for (int l = 0; l < 5; ++l)
-        {
-            float f2 = 0.0F;
-            float f3 = 0.0F;
-            float f4 = 0.0F;
-            int i1 = 2;
-            int biome = biomesForGeneration1[k + 2 + (l + 2) * 10];
-
-            for (int j1 = -2; j1 <= 2; ++j1)
-            {
-                for (int k1 = -2; k1 <= 2; ++k1)
-                {
-                    int biome1 = biomesForGeneration1[k + j1 + 2 + (l + k1 + 2) * 10];
-                    float f5 = biomeDepthOffset + base_and_variation.first * biomeDepthWeight;
-                    float f6 = biomeScaleOffset + base_and_variation.second * biomeScaleWeight;
-
-                    if (amplified_ && f5 > 0.0F)
-                    {
-                        f5 = 1.0F + f5 * 2.0F;
-                        f6 = 1.0F + f6 * 4.0F;
-                    }
-
-                    float f7 = biomeWeights[j1 + 2 + (k1 + 2) * 5] / (f5 + 2.0F);
 
                     f2 += f6 * f7;
                     f3 += f5 * f7;

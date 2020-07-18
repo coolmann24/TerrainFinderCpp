@@ -28,15 +28,12 @@ private:
 
 };
 
-using TerrainSearchFunc = std::function <void(int64_t, int, int, int, int, int, int, std::vector<FormationBlock>, std::unordered_set<int>*, bool)>;
+using SearchFunc = std::function <void(int64_t, int, int, int, int, int, int, std::vector<FormationBlock>, std::unordered_set<int>*, bool)>;
 
 void terrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations);
 void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations); //twice as fast at the cost of a shitload of memory
-void threadedTerrainSearch(TerrainSearchFunc func, int numThreads, int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, std::unordered_set<int> biomes, bool allRotations);
 
+void heightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations);
+void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations); //twice as fast at the cost of a shitload of memory
 
-using HeightmapSearchFunc = std::function <void(int64_t, int, int, int, int, int, int, std::vector<FormationBlock>, int, bool)>;
-
-void heightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, int biome, bool allRotations);
-void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, int biome, bool allRotations); //twice as fast at the cost of a shitload of memory
-void threadedHeightmapSearch(HeightmapSearchFunc func, int numThreads, int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, int biome, bool allRotations);
+void threadedSearch(SearchFunc func, int numThreads, int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, std::unordered_set<int> biomes, bool allRotations);

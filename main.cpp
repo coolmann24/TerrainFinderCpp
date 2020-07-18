@@ -71,24 +71,31 @@ int main()
 	}*/
 
 	std::vector<FormationBlock> formation;
-	/*formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::GRASS));
+	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::GRASS));
 	formation.push_back(FormationBlock(1, 5, 0, ChunkGenerator::GRASS)); 
 	formation.push_back(FormationBlock(0, 5, 1, ChunkGenerator::GRASS));
 	formation.push_back(FormationBlock(1, 10, 1, ChunkGenerator::GRASS));
 	formation.push_back(FormationBlock(0, 1, 0, ChunkGenerator::AIR));
 	formation.push_back(FormationBlock(1, 6, 0, ChunkGenerator::AIR));
 	formation.push_back(FormationBlock(0, 6, 1, ChunkGenerator::AIR));
-	formation.push_back(FormationBlock(1, 11, 1, ChunkGenerator::AIR));*/
-	formation.push_back(FormationBlock(0, 0, 0, 1));
+	formation.push_back(FormationBlock(1, 11, 1, ChunkGenerator::AIR));
+	/*formation.push_back(FormationBlock(0, 0, 0, 1));
 	formation.push_back(FormationBlock(1, 5, 0, 1));
 	formation.push_back(FormationBlock(0, 5, 1, 1));
 	formation.push_back(FormationBlock(1, 10, 1, 1));
 	formation.push_back(FormationBlock(0, 1, 0, 0));
 	formation.push_back(FormationBlock(1, 6, 0, 0));
 	formation.push_back(FormationBlock(0, 6, 1, 0));
-	formation.push_back(FormationBlock(1, 11, 1, 0));
-	HeightmapSearchFunc func = cachedHeightmapSearch;
-	threadedHeightmapSearch(func, 2, 8675309L, -100, 100, 60, 90, -100, 100, formation, 1, true);
+	formation.push_back(FormationBlock(1, 11, 1, 0));*/
+	SearchFunc func = terrainSearch;
+	//HeightmapSearchFunc func = cachedHeightmapSearch;
+	//threadedHeightmapSearch(func, 1, 8675309L, -100, 100, 60, 90, -100, 100, formation, 1, true);
+	std::unordered_set<int> biomes;
+	//biomes.insert(1);
+	//biomes.insert(1);
+	biomes.insert(4);
+	//biomes.insert(3);
+	threadedSearch(func, 4, 8675309L, -350, 350, 60, 90, -350, 350, formation, biomes, true);
 	//cachedSearch(8675309L, -100, 100, 60, 90, -100, 100, formation, nullptr, true);
 
 	return 0;

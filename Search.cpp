@@ -40,10 +40,10 @@ void terrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int z
 	}
 
 	ChunkGenerator generator(seed, MC_1_12);
-	ChunkData* chunk = new ChunkData();
-	ChunkData* chunkxp = new ChunkData();
-	ChunkData* chunkzp = new ChunkData();
-	ChunkData* chunkxzp = new ChunkData();
+	std::pair<bool, std::shared_ptr<ChunkData>> chunk = std::make_pair(false, std::make_shared<ChunkData>());
+	std::pair<bool, std::shared_ptr<ChunkData>> chunkxp = std::make_pair(false, std::make_shared<ChunkData>());
+	std::pair<bool, std::shared_ptr<ChunkData>> chunkzp = std::make_pair(false, std::make_shared<ChunkData>());
+	std::pair<bool, std::shared_ptr<ChunkData>> chunkxzp = std::make_pair(false, std::make_shared<ChunkData>());
 
 	for (int x = xminc; x <= xmaxc; x++)
 	{
@@ -56,11 +56,14 @@ void terrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int z
 			}
 			else
 			{
-				generator.provideChunk(x, z, *chunk);
-				generator.provideChunk(x + 1, z, *chunkxp);
+				chunk.first = generator.provideChunk(x, z, *chunk.second, biomes);
+				chunkxp.first = generator.provideChunk(x + 1, z, *chunkxp.second, biomes);
 			}
-			generator.provideChunk(x, z + 1, *chunkzp);
-			generator.provideChunk(x + 1, z + 1, *chunkxzp);
+			chunkzp.first = generator.provideChunk(x, z + 1, *chunkzp.second, biomes);
+			chunkxzp.first = generator.provideChunk(x + 1, z + 1, *chunkxzp.second, biomes);
+
+			if (!chunk.first || !chunkxp.first || !chunkzp.first || !chunkxzp.first)
+				continue;
 
 			for (int xb = 0; xb < 16; xb++)
 			{
@@ -78,7 +81,7 @@ void terrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int z
 
 								if (xrel >= 16 && zrel >= 16)
 								{
-									if (chunkxzp->getBlock(xrel - 16, y + block.getY(), zrel - 16) != block.getBlockId())
+									if (chunkxzp.second->getBlock(xrel - 16, y + block.getY(), zrel - 16) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -86,7 +89,7 @@ void terrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int z
 								}
 								else if (xrel >= 16)
 								{
-									if (chunkxp->getBlock(xrel - 16, y + block.getY(), zrel) != block.getBlockId())
+									if (chunkxp.second->getBlock(xrel - 16, y + block.getY(), zrel) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -94,7 +97,7 @@ void terrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int z
 								}
 								else if (zrel >= 16)
 								{
-									if (chunkzp->getBlock(xrel, y + block.getY(), zrel - 16) != block.getBlockId())
+									if (chunkzp.second->getBlock(xrel, y + block.getY(), zrel - 16) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -102,7 +105,7 @@ void terrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int z
 								}
 								else
 								{
-									if (chunk->getBlock(xrel, y + block.getY(), zrel) != block.getBlockId())
+									if (chunk.second->getBlock(xrel, y + block.getY(), zrel) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -117,10 +120,6 @@ void terrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int z
 			}
 		}
 	}
-	delete chunk;
-	delete chunkxp;
-	delete chunkzp;
-	delete chunkxzp;
 }
 
 void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations)
@@ -146,9 +145,13 @@ void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax,
 	}
 
 	ChunkGenerator generator(seed, MC_1_13);
-	std::unordered_map<int64_t, std::pair<int, std::shared_ptr<ChunkData>>> chunk_cache; //int counts uses (4 total), once accessed 3 additional times delete from cache (except if chunk on search edge uses is probably 2)
-	std::shared_ptr<ChunkData> chunk, chunkxp, chunkzp, chunkxzp;
+	//std::unordered_map<int64_t, bool> valid_map;
+	std::unordered_map<int64_t, std::pair<int, std::pair<bool, std::shared_ptr<ChunkData>>>> chunk_cache; //int counts uses (4 total), once accessed 3 additional times delete from cache (except if chunk on search edge uses is probably 2)
+	std::pair<bool, std::shared_ptr<ChunkData>> chunk, chunkxp, chunkzp, chunkxzp;
 
+	std::chrono::milliseconds generation_time(0);
+	auto search_begin = std::chrono::system_clock::now();
+	
 	for (int x = xminc; x <= xmaxc; x++)
 	{
 		for (int z = zminc; z <= zmaxc; z++)
@@ -158,9 +161,11 @@ void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax,
 
 			if (std::end(chunk_cache) == chunk_cache.find(key))
 			{
-				chunk = std::make_shared<ChunkData>();
-				generator.provideChunk(x, z, *chunk);
-				chunk_cache[key] = std::make_pair(x > xminc && z > zminc ? 2 : 0, chunk);
+				auto ch = std::make_shared<ChunkData>();
+				auto before = std::chrono::system_clock::now();
+				bool valid = generator.provideChunk(x, z, *ch, biomes);
+				generation_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - before);
+				chunk_cache[key] = std::make_pair(x > xminc && z > zminc ? 2 : 0, chunk = std::make_pair(valid, ch));
 			}
 			else
 			{
@@ -172,9 +177,11 @@ void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax,
 			}
 			if (std::end(chunk_cache) == chunk_cache.find(keyxp))
 			{
-				chunkxp = std::make_shared<ChunkData>();
-				generator.provideChunk(x + 1, z, *chunkxp);
-				chunk_cache[keyxp] = std::make_pair((x + 1) < xmaxc && z > zminc ? 2 : 0, chunkxp);// if the chunk is on the edge of search we won't access it 4 times total but probably just twice
+				auto ch = std::make_shared<ChunkData>();
+				auto before = std::chrono::system_clock::now();
+				bool valid = generator.provideChunk(x + 1, z, *ch, biomes);
+				generation_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - before);
+				chunk_cache[keyxp] = std::make_pair((x + 1) < xmaxc && z > zminc ? 2 : 0, chunkxp = std::make_pair(valid, ch));// if the chunk is on the edge of search we won't access it 4 times total but probably just twice
 			}
 			else
 			{
@@ -186,9 +193,11 @@ void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax,
 			}
 			if (std::end(chunk_cache) == chunk_cache.find(keyzp))
 			{
-				chunkzp = std::make_shared<ChunkData>();
-				generator.provideChunk(x, z + 1, *chunkzp);
-				chunk_cache[keyzp] = std::make_pair(x > xminc && (z + 1) < zmaxc ? 2 : 0, chunkzp);
+				auto ch = std::make_shared<ChunkData>();
+				auto before = std::chrono::system_clock::now();
+				bool valid = generator.provideChunk(x, z + 1, *ch, biomes);
+				generation_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - before);
+				chunk_cache[keyzp] = std::make_pair(x > xminc && (z + 1) < zmaxc ? 2 : 0, chunkzp = std::make_pair(valid, ch));
 			}
 			else
 			{
@@ -200,9 +209,11 @@ void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax,
 			}
 			if (std::end(chunk_cache) == chunk_cache.find(keyxzp))
 			{
-				chunkxzp = std::make_shared<ChunkData>();
-				generator.provideChunk(x + 1, z + 1, *chunkxzp);
-				chunk_cache[keyxzp] = std::make_pair((x + 1) < xmaxc && (z + 1) < zmaxc ? 2 : 0, chunkxzp);
+				auto ch = std::make_shared<ChunkData>();
+				auto before = std::chrono::system_clock::now();
+				bool valid = generator.provideChunk(x + 1, z + 1, *ch, biomes);
+				generation_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - before);
+				chunk_cache[keyxzp] = std::make_pair((x + 1) < xmaxc && (z + 1) < zmaxc ? 2 : 0, chunkxzp = std::make_pair(valid, ch));
 			}
 			else
 			{
@@ -212,6 +223,9 @@ void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax,
 				else
 					chunk_cache[keyxzp].first--;
 			}
+
+			if (!chunk.first || !chunkxp.first || !chunkzp.first || !chunkxzp.first) //biome mismatch of any chunk
+				continue;
 
 			for (int xb = 0; xb < 16; xb++)
 			{
@@ -229,7 +243,7 @@ void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax,
 
 								if (xrel >= 16 && zrel >= 16)
 								{
-									if (chunkxzp->getBlock(xrel - 16, y + block.getY(), zrel - 16) != block.getBlockId())
+									if (chunkxzp.second->getBlock(xrel - 16, y + block.getY(), zrel - 16) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -237,7 +251,7 @@ void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax,
 								}
 								else if (xrel >= 16)
 								{
-									if (chunkxp->getBlock(xrel - 16, y + block.getY(), zrel) != block.getBlockId())
+									if (chunkxp.second->getBlock(xrel - 16, y + block.getY(), zrel) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -245,7 +259,7 @@ void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax,
 								}
 								else if (zrel >= 16)
 								{
-									if (chunkzp->getBlock(xrel, y + block.getY(), zrel - 16) != block.getBlockId())
+									if (chunkzp.second->getBlock(xrel, y + block.getY(), zrel - 16) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -253,7 +267,7 @@ void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax,
 								}
 								else
 								{
-									if (chunk->getBlock(xrel, y + block.getY(), zrel) != block.getBlockId())
+									if (chunk.second->getBlock(xrel, y + block.getY(), zrel) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -267,43 +281,12 @@ void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax,
 				}
 			}
 		}
-
-		//std::cout << chunk_cache.size() << std::endl;
 	}
-}
-
-void threadedTerrainSearch(TerrainSearchFunc func, int numThreads, int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, std::unordered_set<int> biomes, bool allRotations)
-{
-	if (numThreads < 0)
-		throw std::runtime_error("Search threads must be greater than zero");
-
-	if (xminc > xmaxc || ymin > ymax || zminc > zmaxc)
-		throw std::runtime_error("Search range min bounds must be less than max");
-
-	std::cout << "Searching with " << numThreads << " threads..." << std::endl;
-
-	auto start = std::chrono::system_clock::now();
-
-	std::unordered_set<int>* biomesptr = nullptr;
-	if (biomes.size() > 0)
-		biomesptr = &biomes;
-
-	int width = xmaxc - xminc;
-	std::vector<std::thread> threads;
-	for (int i = 0; i < numThreads - 1; i++)
-	{
-		threads.emplace_back(func, seed, xminc + i * (width / numThreads), xminc + (i + 1) * (width / numThreads) - 1, ymin, ymax, zminc, zmaxc, formation, biomesptr, allRotations);
-	}
-	threads.emplace_back(func, seed, xminc + (numThreads - 1) * (width / numThreads), xmaxc, ymin, ymax, zminc, zmaxc, formation, biomesptr, allRotations);
-
-	for (size_t i = 0; i < threads.size(); i++)
-		threads[i].join();
-
-	std::cout << "Search completed in " << std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - start).count() << " seconds." << std::endl;
+	std::cout << "Thread took " << generation_time.count() << " milliseconds for terrain generation and " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - search_begin).count() << " milliseconds for the entire search\n";
 }
 
 
-void heightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, int biome, bool allRotations)
+void heightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations)
 {
 	if (xminc > xmaxc || ymin > ymax || zminc > zmaxc)
 		throw std::runtime_error("Search range min bounds must be less than max");
@@ -326,12 +309,12 @@ void heightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int
 	}
 
 	ChunkGenerator generator(seed, MC_1_12);
-	ChunkHeightmap* chunk = new ChunkHeightmap();
-	ChunkHeightmap* chunkxp = new ChunkHeightmap();
-	ChunkHeightmap* chunkzp = new ChunkHeightmap();
-	ChunkHeightmap* chunkxzp = new ChunkHeightmap();
+	std::pair<bool, std::shared_ptr<ChunkHeightmap>> chunk = std::make_pair(false, std::make_shared<ChunkHeightmap>());
+	std::pair<bool, std::shared_ptr<ChunkHeightmap>> chunkxp = std::make_pair(false, std::make_shared<ChunkHeightmap>());
+	std::pair<bool, std::shared_ptr<ChunkHeightmap>> chunkzp = std::make_pair(false, std::make_shared<ChunkHeightmap>());
+	std::pair<bool, std::shared_ptr<ChunkHeightmap>> chunkxzp = std::make_pair(false, std::make_shared<ChunkHeightmap>());
 
-	auto base_and_variation = std::make_pair(generator.getBaseHeight(biome), generator.getHeightVariation(biome));
+	//auto base_and_variation = std::make_pair(generator.getBaseHeight(biome), generator.getHeightVariation(biome));
 
 	for (int x = xminc; x <= xmaxc; x++)
 	{
@@ -344,11 +327,14 @@ void heightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int
 			}
 			else
 			{
-				generator.provideChunkHeightmap(x, z, *chunk, base_and_variation);
-				generator.provideChunkHeightmap(x + 1, z, *chunkxp, base_and_variation);
+				chunk.first = generator.provideChunkHeightmap(x, z, *chunk.second, biomes);
+				chunkxp.first = generator.provideChunkHeightmap(x + 1, z, *chunkxp.second, biomes);
 			}
-			generator.provideChunkHeightmap(x, z + 1, *chunkzp, base_and_variation);
-			generator.provideChunkHeightmap(x + 1, z + 1, *chunkxzp, base_and_variation);
+			chunkzp.first = generator.provideChunkHeightmap(x, z + 1, *chunkzp.second, biomes);
+			chunkxzp.first = generator.provideChunkHeightmap(x + 1, z + 1, *chunkxzp.second, biomes);
+
+			if (!chunk.first || !chunkxp.first || !chunkzp.first || !chunkxzp.first)
+				continue;
 
 			for (int xb = 0; xb < 16; xb++)
 			{
@@ -366,7 +352,7 @@ void heightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int
 
 								if (xrel >= 16 && zrel >= 16)
 								{
-									if (chunkxzp->getBlock(xrel - 16, y + block.getY(), zrel - 16) != block.getBlockId())
+									if (chunkxzp.second->getBlock(xrel - 16, y + block.getY(), zrel - 16) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -374,7 +360,7 @@ void heightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int
 								}
 								else if (xrel >= 16)
 								{
-									if (chunkxp->getBlock(xrel - 16, y + block.getY(), zrel) != block.getBlockId())
+									if (chunkxp.second->getBlock(xrel - 16, y + block.getY(), zrel) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -382,7 +368,7 @@ void heightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int
 								}
 								else if (zrel >= 16)
 								{
-									if (chunkzp->getBlock(xrel, y + block.getY(), zrel - 16) != block.getBlockId())
+									if (chunkzp.second->getBlock(xrel, y + block.getY(), zrel - 16) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -390,7 +376,7 @@ void heightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int
 								}
 								else
 								{
-									if (chunk->getBlock(xrel, y + block.getY(), zrel) != block.getBlockId())
+									if (chunk.second->getBlock(xrel, y + block.getY(), zrel) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -405,13 +391,9 @@ void heightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int
 			}
 		}
 	}
-	delete chunk;
-	delete chunkxp;
-	delete chunkzp;
-	delete chunkxzp;
 }
 
-void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, int biome, bool allRotations)
+void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations)
 {
 	if (xminc > xmaxc || ymin > ymax || zminc > zmaxc)
 		throw std::runtime_error("Search range min bounds must be less than max");
@@ -434,10 +416,12 @@ void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int yma
 	}
 
 	ChunkGenerator generator(seed, MC_1_13);
-	std::unordered_map<int64_t, std::pair<int, std::shared_ptr<ChunkHeightmap>>> chunk_cache; //int counts uses (4 total), once accessed 3 additional times delete from cache (except if chunk on search edge uses is probably 2)
-	std::shared_ptr<ChunkHeightmap> chunk, chunkxp, chunkzp, chunkxzp;
+	std::unordered_map<int64_t, std::pair<int, std::pair<bool, std::shared_ptr<ChunkHeightmap>>>> chunk_cache; //int counts uses (4 total), once accessed 3 additional times delete from cache (except if chunk on search edge uses is probably 2)
+	std::pair<bool, std::shared_ptr<ChunkHeightmap>> chunk, chunkxp, chunkzp, chunkxzp;
 
-	auto base_and_variation = std::make_pair(generator.getBaseHeight(biome), generator.getHeightVariation(biome));
+	std::chrono::milliseconds generation_time(0);
+	std::chrono::milliseconds chunk_comparison_time(0);
+	auto search_begin = std::chrono::system_clock::now();
 
 	for (int x = xminc; x <= xmaxc; x++)
 	{
@@ -448,9 +432,11 @@ void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int yma
 
 			if (std::end(chunk_cache) == chunk_cache.find(key))
 			{
-				chunk = std::make_shared<ChunkHeightmap>();
-				generator.provideChunkHeightmap(x, z, *chunk, base_and_variation);
-				chunk_cache[key] = std::make_pair(x > xminc && z > zminc ? 2 : 0, chunk);
+				auto ch = std::make_shared<ChunkHeightmap>();
+				auto before = std::chrono::system_clock::now();
+				bool valid = generator.provideChunkHeightmap(x, z, *ch, biomes);
+				generation_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - before);
+				chunk_cache[key] = std::make_pair(x > xminc && z > zminc ? 2 : 0, chunk = std::make_pair(valid, ch));
 			}
 			else
 			{
@@ -462,9 +448,11 @@ void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int yma
 			}
 			if (std::end(chunk_cache) == chunk_cache.find(keyxp))
 			{
-				chunkxp = std::make_shared<ChunkHeightmap>();
-				generator.provideChunkHeightmap(x + 1, z, *chunkxp, base_and_variation);
-				chunk_cache[keyxp] = std::make_pair((x + 1) < xmaxc && z > zminc ? 2 : 0, chunkxp);// if the chunk is on the edge of search we won't access it 4 times total but probably just twice
+				auto ch = std::make_shared<ChunkHeightmap>();
+				auto before = std::chrono::system_clock::now();
+				bool valid = generator.provideChunkHeightmap(x + 1, z, *ch, biomes);
+				generation_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - before);
+				chunk_cache[keyxp] = std::make_pair((x + 1) < xmaxc && z > zminc ? 2 : 0, chunkxp = std::make_pair(valid, ch));// if the chunk is on the edge of search we won't access it 4 times total but probably just twice
 			}
 			else
 			{
@@ -476,9 +464,11 @@ void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int yma
 			}
 			if (std::end(chunk_cache) == chunk_cache.find(keyzp))
 			{
-				chunkzp = std::make_shared<ChunkHeightmap>();
-				generator.provideChunkHeightmap(x, z + 1, *chunkzp, base_and_variation);
-				chunk_cache[keyzp] = std::make_pair(x > xminc && (z + 1) < zmaxc ? 2 : 0, chunkzp);
+				auto ch = std::make_shared<ChunkHeightmap>();
+				auto before = std::chrono::system_clock::now();
+				bool valid = generator.provideChunkHeightmap(x, z + 1, *ch, biomes);
+				generation_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - before);
+				chunk_cache[keyzp] = std::make_pair(x > xminc && (z + 1) < zmaxc ? 2 : 0, chunkzp = std::make_pair(valid, ch));
 			}
 			else
 			{
@@ -490,9 +480,11 @@ void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int yma
 			}
 			if (std::end(chunk_cache) == chunk_cache.find(keyxzp))
 			{
-				chunkxzp = std::make_shared<ChunkHeightmap>();
-				generator.provideChunkHeightmap(x + 1, z + 1, *chunkxzp, base_and_variation);
-				chunk_cache[keyxzp] = std::make_pair((x + 1) < xmaxc && (z + 1) < zmaxc ? 2 : 0, chunkxzp);
+				auto ch = std::make_shared<ChunkHeightmap>();
+				auto before = std::chrono::system_clock::now();
+				bool valid = generator.provideChunkHeightmap(x + 1, z + 1, *ch, biomes);
+				generation_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - before);
+				chunk_cache[keyxzp] = std::make_pair((x + 1) < xmaxc && (z + 1) < zmaxc ? 2 : 0, chunkxzp = std::make_pair(valid, ch));
 			}
 			else
 			{
@@ -502,6 +494,11 @@ void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int yma
 				else
 					chunk_cache[keyxzp].first--;
 			}
+
+			if (!chunk.first || !chunkxp.first || !chunkzp.first || !chunkxzp.first) //biome mismatch of any chunk
+				continue;
+
+			auto compare_before = std::chrono::system_clock::now();
 
 			for (int xb = 0; xb < 16; xb++)
 			{
@@ -519,7 +516,7 @@ void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int yma
 
 								if (xrel >= 16 && zrel >= 16)
 								{
-									if (chunkxzp->getBlock(xrel - 16, y + block.getY(), zrel - 16) != block.getBlockId())
+									if (chunkxzp.second->getBlock(xrel - 16, y + block.getY(), zrel - 16) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -527,7 +524,7 @@ void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int yma
 								}
 								else if (xrel >= 16)
 								{
-									if (chunkxp->getBlock(xrel - 16, y + block.getY(), zrel) != block.getBlockId())
+									if (chunkxp.second->getBlock(xrel - 16, y + block.getY(), zrel) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -535,7 +532,7 @@ void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int yma
 								}
 								else if (zrel >= 16)
 								{
-									if (chunkzp->getBlock(xrel, y + block.getY(), zrel - 16) != block.getBlockId())
+									if (chunkzp.second->getBlock(xrel, y + block.getY(), zrel - 16) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -543,7 +540,7 @@ void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int yma
 								}
 								else
 								{
-									if (chunk->getBlock(xrel, y + block.getY(), zrel) != block.getBlockId())
+									if (chunk.second->getBlock(xrel, y + block.getY(), zrel) != block.getBlockId())
 									{
 										found = false;
 										break;
@@ -556,13 +553,13 @@ void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int yma
 					}
 				}
 			}
+			chunk_comparison_time += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - compare_before);
 		}
-
-		//std::cout << chunk_cache.size() << std::endl;
 	}
+	std::cout << "Thread took " << generation_time.count() << " milliseconds for heightmap generation, " << chunk_comparison_time.count() << " milliseconds for comparing, and " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - search_begin).count() << " milliseconds for the entire search\n";
 }
 
-void threadedHeightmapSearch(HeightmapSearchFunc func, int numThreads, int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, int biome, bool allRotations)
+void threadedSearch(SearchFunc func, int numThreads, int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, std::unordered_set<int> biomes, bool allRotations)
 {
 	if (numThreads < 0)
 		throw std::runtime_error("Search threads must be greater than zero");
@@ -574,13 +571,17 @@ void threadedHeightmapSearch(HeightmapSearchFunc func, int numThreads, int64_t s
 
 	auto start = std::chrono::system_clock::now();
 
+	std::unordered_set<int>* biomesptr = nullptr;
+	if (biomes.size() > 0)
+		biomesptr = &biomes;
+
 	int width = xmaxc - xminc;
 	std::vector<std::thread> threads;
 	for (int i = 0; i < numThreads - 1; i++)
 	{
-		threads.emplace_back(func, seed, xminc + i * (width / numThreads), xminc + (i + 1) * (width / numThreads) - 1, ymin, ymax, zminc, zmaxc, formation, biome, allRotations);
+		threads.emplace_back(func, seed, xminc + i * (width / numThreads), xminc + (i + 1) * (width / numThreads) - 1, ymin, ymax, zminc, zmaxc, formation, biomesptr, allRotations);
 	}
-	threads.emplace_back(func, seed, xminc + (numThreads - 1) * (width / numThreads), xmaxc, ymin, ymax, zminc, zmaxc, formation, biome, allRotations);
+	threads.emplace_back(func, seed, xminc + (numThreads - 1) * (width / numThreads), xmaxc, ymin, ymax, zminc, zmaxc, formation, biomesptr, allRotations);
 
 	for (size_t i = 0; i < threads.size(); i++)
 		threads[i].join();
