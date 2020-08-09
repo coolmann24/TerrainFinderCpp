@@ -1,11 +1,13 @@
 #pragma once
 
+#include "generator.h"
 #include "ChunkGenerator.h"
 #include <vector>
 #include <iostream>
 #include <thread>
 #include <functional>
 #include <chrono>
+#include <atomic>
 
 class FormationBlock //for heightmap formation, air=0, terrain=1
 {
@@ -28,12 +30,14 @@ private:
 
 };
 
-using SearchFunc = std::function <void(int64_t, int, int, int, int, int, int, std::vector<FormationBlock>, std::unordered_set<int>*, bool)>;
+using ProgressCallback = std::function<void(double)>;
+using FoundCallback = std::function<void(std::pair<int, int>)>;
+using SearchFunc = std::function<void(int64_t, MCversion, int, int, int, int, int, int, std::vector<FormationBlock>, std::unordered_set<int>*, bool, std::atomic_bool*, ProgressCallback*, FoundCallback)>;
 
-void terrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations);
-void cachedTerrainSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations); //twice as fast at the cost of a shitload of memory
+void terrainSearch(int64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback*, FoundCallback);
+void cachedTerrainSearch(int64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback*, FoundCallback); //twice as fast at the cost of a shitload of memory
 
-void heightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations);
-void cachedHeightmapSearch(int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations); //twice as fast at the cost of a shitload of memory
+void heightmapSearch(int64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback*, FoundCallback);
+void cachedHeightmapSearch(int64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback*, FoundCallback); //twice as fast at the cost of a shitload of memory
 
-void threadedSearch(SearchFunc func, int numThreads, int64_t seed, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, std::unordered_set<int> biomes, bool allRotations);
+void threadedSearch(SearchFunc func, int numThreads, int64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, std::unordered_set<int> biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback*, FoundCallback);

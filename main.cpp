@@ -4,6 +4,16 @@
 #include "ChunkGenerator.h"
 #include "Search.h"
 
+void found_main(std::pair<int, int> location)
+{
+	std::cout << "found cb, X: " << std::get<0>(location) << " Z: " << std::get<1>(location) << std::endl;
+}
+
+void progress_main(double progress)
+{
+	std::cout << "Progress: " << progress << std::endl;
+}
+
 int main()
 {
 	initBiomes();
@@ -71,31 +81,43 @@ int main()
 	}*/
 
 	std::vector<FormationBlock> formation;
-	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::GRASS));
-	formation.push_back(FormationBlock(1, 5, 0, ChunkGenerator::GRASS)); 
-	formation.push_back(FormationBlock(0, 5, 1, ChunkGenerator::GRASS));
-	formation.push_back(FormationBlock(1, 10, 1, ChunkGenerator::GRASS));
-	formation.push_back(FormationBlock(0, 1, 0, ChunkGenerator::AIR));
-	formation.push_back(FormationBlock(1, 6, 0, ChunkGenerator::AIR));
-	formation.push_back(FormationBlock(0, 6, 1, ChunkGenerator::AIR));
-	formation.push_back(FormationBlock(1, 11, 1, ChunkGenerator::AIR));
-	/*formation.push_back(FormationBlock(0, 0, 0, 1));
+	/*formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(2, 0, 0, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(3, 0, 0, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(4, 0, 0, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(0, 0, 1, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(0, 0, 2, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(0, 0, 4, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(1, 0, 2, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(1, 0, 4, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::WATER_LILY));
+	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::WATER_LILY));*/
+	//formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::GRASS)); 
+	
 	formation.push_back(FormationBlock(1, 5, 0, 1));
 	formation.push_back(FormationBlock(0, 5, 1, 1));
 	formation.push_back(FormationBlock(1, 10, 1, 1));
 	formation.push_back(FormationBlock(0, 1, 0, 0));
 	formation.push_back(FormationBlock(1, 6, 0, 0));
 	formation.push_back(FormationBlock(0, 6, 1, 0));
-	formation.push_back(FormationBlock(1, 11, 1, 0));*/
-	SearchFunc func = terrainSearch;
-	//HeightmapSearchFunc func = cachedHeightmapSearch;
-	//threadedHeightmapSearch(func, 1, 8675309L, -100, 100, 60, 90, -100, 100, formation, 1, true);
+	formation.push_back(FormationBlock(1, 11, 1, 0));
+	SearchFunc func = cachedHeightmapSearch;
+	ProgressCallback progresscb = progress_main;
 	std::unordered_set<int> biomes;
 	//biomes.insert(1);
-	//biomes.insert(1);
-	biomes.insert(4);
 	//biomes.insert(3);
-	threadedSearch(func, 4, 8675309L, -350, 350, 60, 90, -350, 350, formation, biomes, true);
+	//biomes.insert(131);
+	//biomes.insert(164);
+	//biomes.insert(1);
+	//biomes.insert(3);
+	threadedSearch(func, 4, -4172144997902289642, MC_1_12, -200, 200, 60, 90, -200, 200, formation, biomes, true, nullptr, &progresscb, found_main);
 	//cachedSearch(8675309L, -100, 100, 60, 90, -100, 100, formation, nullptr, true);
 
 	return 0;
