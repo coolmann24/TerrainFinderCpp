@@ -19,5 +19,5 @@ void ChunkHeightmap::setHeightmap(int x, int z, int height)
 }
 int ChunkHeightmap::getBlock(int x, int y, int z) // 1 == terrain, 0 == air
 {
-	return heightmap_[x][z] >= y ? 1 : 0;
+	return heightmap_[x][z] == y ? 1 : 0;
 }

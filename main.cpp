@@ -3,15 +3,22 @@
 #include <iostream>
 #include "ChunkGenerator.h"
 #include "Search.h"
+#include <fstream>
+#include <mutex>
+
+std::ofstream* _output_;
+std::mutex _write_locker_;
 
 void found_main(std::pair<int, int> location)
 {
-	std::cout << "found cb, X: " << std::get<0>(location) << " Z: " << std::get<1>(location) << std::endl;
+	_write_locker_.lock();
+	(*_output_) << "found, X: " << std::get<0>(location) << " Z: " << std::get<1>(location) << std::endl;
+	_write_locker_.unlock();
 }
 
 void progress_main(double progress)
 {
-	std::cout << "Progress: " << progress << std::endl;
+	//std::cout << "Progress: " << progress << std::endl;
 }
 
 int main()
@@ -35,15 +42,15 @@ int main()
 
 	//std::cout << "Biome: " << *map << std::endl;
 
-	/*std::cout<< std::numeric_limits<double>::is_iec559 << std::endl;
+	std::cout<< std::numeric_limits<double>::is_iec559 << std::endl;
 
-	ChunkGenerator generator(8675309, MC_1_12);
+	ChunkGenerator generator(-4172144997902289642, MC_1_12);
 	ChunkData chunk;
 	ChunkHeightmap chunkheight;
-	generator.provideChunk(-11, -3, chunk);*/
-	//generator.provideChunkHeightmap(-11, -3, chunkheight, 1/*plains*/);
+	generator.provideChunk(2, -5, chunk);
+	generator.provideChunkHeightmap(2, -5, chunkheight);
 
-	/*std::cout << std::endl;
+	std::cout << std::endl;
 
 	for (int i = 15; i >= 0; i--)
 	{
@@ -78,9 +85,9 @@ int main()
 			std::cout << chunkheight.getHeightmap(i, j) << " ";
 		}
 		std::cout << std::endl;;
-	}*/
+	}
 
-	std::vector<FormationBlock> formation;
+	//std::vector<FormationBlock> formation;
 	/*formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::WATER_LILY));
 	formation.push_back(FormationBlock(2, 0, 0, ChunkGenerator::WATER_LILY));
 	formation.push_back(FormationBlock(3, 0, 0, ChunkGenerator::WATER_LILY));
@@ -101,24 +108,28 @@ int main()
 	formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::WATER_LILY));*/
 	//formation.push_back(FormationBlock(0, 0, 0, ChunkGenerator::GRASS)); 
 	
+	/*formation.push_back(FormationBlock(0, 0, 0, 1));
 	formation.push_back(FormationBlock(1, 5, 0, 1));
 	formation.push_back(FormationBlock(0, 5, 1, 1));
-	formation.push_back(FormationBlock(1, 10, 1, 1));
-	formation.push_back(FormationBlock(0, 1, 0, 0));
+	formation.push_back(FormationBlock(1, 10, 1, 1));*/
+	/*formation.push_back(FormationBlock(0, 1, 0, 0));
 	formation.push_back(FormationBlock(1, 6, 0, 0));
 	formation.push_back(FormationBlock(0, 6, 1, 0));
-	formation.push_back(FormationBlock(1, 11, 1, 0));
-	SearchFunc func = cachedHeightmapSearch;
-	ProgressCallback progresscb = progress_main;
-	std::unordered_set<int> biomes;
+	formation.push_back(FormationBlock(1, 11, 1, 0));*/
+	//SearchFunc func = cachedTerrainSearch;
+	//ProgressCallback progresscb = progress_main;
+	//std::unordered_set<int> biomes;
 	//biomes.insert(1);
 	//biomes.insert(3);
 	//biomes.insert(131);
 	//biomes.insert(164);
 	//biomes.insert(1);
 	//biomes.insert(3);
-	threadedSearch(func, 4, -4172144997902289642, MC_1_12, -200, 200, 60, 90, -200, 200, formation, biomes, true, nullptr, &progresscb, found_main);
+	//_output_ = new std::ofstream();
+	//_output_->open("out.txt");
+	//threadedSearch(func, 4, -4172144997902289642, MC_1_12, 20000, 40000, 250, 255, 20000, 40000, formation, biomes, true, nullptr, &progresscb, found_main, []() {});
 	//cachedSearch(8675309L, -100, 100, 60, 90, -100, 100, formation, nullptr, true);
+	//_output_->close();
 
 	return 0;
 }

@@ -39,7 +39,7 @@ ChunkGenerator::ChunkGenerator(int64_t world_seed, MCversion version)
     setSeed(&grassNoiseSeed);
     grassColorNoise = std::make_unique<NoiseGeneratorPerlin>(&grassNoiseSeed, 1);
 
-    stack_ = setupGenerator(version);
+    setupGenerator(&stack_, version);
     applySeed(&stack_, world_seed);
 
     registerBaseAndVariation();
@@ -325,6 +325,17 @@ bool ChunkGenerator::provideChunkHeightmap(int x, int z, ChunkHeightmap& chunk, 
             return false;
         }
     }
+
+    /*std::cout << "BIOMES\n";
+
+    for (int i = 15; i >= 0; i--)
+    {
+        for (int j = 0; j < 16; j++)
+        {
+            std::cout << biomesForGeneration2[j*16+i] << " ";
+        }
+        std::cout << std::endl;
+    }*/
 
     generateHeightmap(x * 4, 0, z * 4);
 

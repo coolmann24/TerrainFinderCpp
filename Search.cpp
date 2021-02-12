@@ -498,10 +498,34 @@ void cachedHeightmapSearch(int64_t seed, MCversion version, int xminc, int xmaxc
 			{
 				for (int zb = 0; zb < 16; zb++)
 				{
-					for (int y = ymin; y <= ymax; y++)
-					{
+					/*for (int y = ymin; y <= ymax; y++)
+					{*/
 						for (auto& form : formations)
 						{
+							int chunky;
+
+							int xrelinit = xb + form[0].getX();
+							int zrelinit = zb + form[0].getZ();
+
+							if (xrelinit >= 16 && zrelinit >= 16)
+							{
+								chunky = chunkxzp.second->getHeightmap(xrelinit - 16, zrelinit - 16);
+							}
+							else if (xrelinit >= 16)
+							{
+								chunky = chunkxp.second->getHeightmap(xrelinit - 16, zrelinit);
+							}
+							else if (zrelinit >= 16)
+							{
+								chunky = chunkzp.second->getHeightmap(xrelinit, zrelinit - 16);
+							}
+							else
+							{
+								chunky = chunk.second->getHeightmap(xrelinit, zrelinit);
+							}
+
+							int y = chunky - form[0].getY();
+						
 							bool found = true;
 							for (auto& block : form)
 							{
@@ -544,14 +568,14 @@ void cachedHeightmapSearch(int64_t seed, MCversion version, int xminc, int xmaxc
 							if (found)
 								foundcb(std::make_pair(x * 16 + xb, z * 16 + zb));
 						}
-					}
+					//}
 				}
 			}
 		}
 	}
 }
 
-void threadedSearch(SearchFunc func, int numThreads, int64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock>& formation, std::unordered_set<int> biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback* progresscb, FoundCallback foundcb)
+void threadedSearch(SearchFunc func, int numThreads, int64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int> biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback* progresscb, FoundCallback foundcb, FinishedCallback finishedcb)
 {
 	if (numThreads < 0)
 		throw std::runtime_error("Search threads must be greater than zero");
@@ -573,4 +597,6 @@ void threadedSearch(SearchFunc func, int numThreads, int64_t seed, MCversion ver
 
 	for (size_t i = 0; i < threads.size(); i++)
 		threads[i].join();
+
+	finishedcb();
 }
