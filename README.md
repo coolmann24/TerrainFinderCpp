@@ -1,3 +1,3 @@
-This is a rewrite I am working on of my Terrain Formation Finder that will be optimized for speed and also have support for new versions.
+This is a C++ library that mimics the world generation of Minecraft Java Edition across a host of versions. It was originally meant to be used as an optimized replacement for my Terrain Formation Finder project. I haven't done a user-friendly GUI app for this yet (still plan to eventually), but the library is basically fully functional and tested (minus maybe a few small bugs). You should be able link against this and use the interface in Search.h to do searches similar to Terrain Formation Finder. There is a few search options to choose, as well as the new "heightmap search", which only analyzes block chunk height and ignores block type. 
 
 This currently links against a modded version of Cubitect's 'cubiomes' library: github.com/Cubitect/cubiomes
