@@ -12,7 +12,7 @@ const double NoiseGeneratorImproved::GRAD_2X[] = { 1.0, -1.0, 1.0, -1.0, 1.0, -1
 const double NoiseGeneratorImproved::GRAD_2Z[] = { 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 0.0, 1.0, 0.0, -1.0 };
 
 
-NoiseGeneratorImproved::NoiseGeneratorImproved(int64_t* p_i45469_1_)
+NoiseGeneratorImproved::NoiseGeneratorImproved(uint64_t* p_i45469_1_)
 {
     xCoord = nextDouble(p_i45469_1_) * 256.0;
     yCoord = nextDouble(p_i45469_1_) * 256.0;

@@ -1,4 +1,5 @@
 #include "Search.h"
+#include <thread>
 
 void alignFormation(std::vector<FormationBlock>& formation)
 {
@@ -17,7 +18,7 @@ void alignFormation(std::vector<FormationBlock>& formation)
 	formation = aligned_formation;
 }
 
-void terrainSearch(int64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback* progresscb, FoundCallback foundcb)
+void terrainSearch(uint64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback* progresscb, FoundCallback foundcb)
 {
 	if (xminc > xmaxc || ymin > ymax || zminc > zmaxc)
 		throw std::runtime_error("Search range min bounds must be less than max");
@@ -127,7 +128,7 @@ void terrainSearch(int64_t seed, MCversion version, int xminc, int xmaxc, int ym
 	}
 }
 
-void cachedTerrainSearch(int64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback* progresscb, FoundCallback foundcb)
+void cachedTerrainSearch(uint64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback* progresscb, FoundCallback foundcb)
 {
 	if (xminc > xmaxc || ymin > ymax || zminc > zmaxc)
 		throw std::runtime_error("Search range min bounds must be less than max");
@@ -284,7 +285,7 @@ void cachedTerrainSearch(int64_t seed, MCversion version, int xminc, int xmaxc, 
 }
 
 
-void heightmapSearch(int64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback* progresscb, FoundCallback foundcb)
+void heightmapSearch(uint64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback* progresscb, FoundCallback foundcb)
 {
 	if (xminc > xmaxc || ymin > ymax || zminc > zmaxc)
 		throw std::runtime_error("Search range min bounds must be less than max");
@@ -396,7 +397,7 @@ void heightmapSearch(int64_t seed, MCversion version, int xminc, int xmaxc, int 
 	}
 }
 
-void cachedHeightmapSearch(int64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback* progresscb, FoundCallback foundcb)
+void cachedHeightmapSearch(uint64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int>* biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback* progresscb, FoundCallback foundcb)
 {
 	if (xminc > xmaxc || ymin > ymax || zminc > zmaxc)
 		throw std::runtime_error("Search range min bounds must be less than max");
@@ -419,7 +420,7 @@ void cachedHeightmapSearch(int64_t seed, MCversion version, int xminc, int xmaxc
 	}
 
 	ChunkGenerator generator(seed, version);
-	std::unordered_map<int64_t, std::pair<int, std::pair<bool, std::shared_ptr<ChunkHeightmap>>>> chunk_cache; //int counts uses (4 total), once accessed 3 additional times delete from cache (except if chunk on search edge uses is probably 2)
+	std::unordered_map<uint64_t, std::pair<int, std::pair<bool, std::shared_ptr<ChunkHeightmap>>>> chunk_cache; //int counts uses (4 total), once accessed 3 additional times delete from cache (except if chunk on search edge uses is probably 2)
 	std::pair<bool, std::shared_ptr<ChunkHeightmap>> chunk, chunkxp, chunkzp, chunkxzp;
 
 	for (int x = xminc; x <= xmaxc; x++)
@@ -575,7 +576,7 @@ void cachedHeightmapSearch(int64_t seed, MCversion version, int xminc, int xmaxc
 	}
 }
 
-void threadedSearch(SearchFunc func, int numThreads, int64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int> biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback* progresscb, FoundCallback foundcb, FinishedCallback finishedcb)
+void threadedSearch(SearchFunc func, int numThreads, uint64_t seed, MCversion version, int xminc, int xmaxc, int ymin, int ymax, int zminc, int zmaxc, std::vector<FormationBlock> formation, std::unordered_set<int> biomes, bool allRotations, std::atomic_bool* keep_searching, ProgressCallback* progresscb, FoundCallback foundcb, FinishedCallback finishedcb)
 {
 	if (numThreads < 0)
 		throw std::runtime_error("Search threads must be greater than zero");

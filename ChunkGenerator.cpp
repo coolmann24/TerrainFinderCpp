@@ -1,13 +1,14 @@
 #include "ChunkGenerator.h"
+#include "generator.h"
 #include <cmath>
 
-ChunkGenerator::ChunkGenerator(int64_t world_seed, MCversion version)
+ChunkGenerator::ChunkGenerator(uint64_t world_seed, MCversion version)
 {
     version_ = version;
 
-    int64_t seed = world_seed;
-    int64_t seedcopy = world_seed;
-    setSeed(&seed);
+    uint64_t seed = world_seed;
+    uint64_t seedcopy = world_seed;
+    setSeed(&seed, world_seed);
 
     minLimitPerlinNoise = std::make_unique<NoiseGeneratorOctaves>(&seed, 16);
     maxLimitPerlinNoise = std::make_unique<NoiseGeneratorOctaves>(&seed, 16);
@@ -31,12 +32,12 @@ ChunkGenerator::ChunkGenerator(int64_t world_seed, MCversion version)
     filler_block_ = DIRT;
     underwater_block_ = GRAVEL;
 
-    setSeed(&seedcopy);
+    setSeed(&seedcopy, world_seed);
     mesaPillarNoise = std::make_unique<NoiseGeneratorPerlin>(&seedcopy, 4);
     mesaPillarRoofNoise = std::make_unique<NoiseGeneratorPerlin>(&seedcopy, 1);
 
-    int64_t grassNoiseSeed = 2345LL;
-    setSeed(&grassNoiseSeed);
+    uint64_t grassNoiseSeed = 2345LL;
+    setSeed(&grassNoiseSeed, world_seed);
     grassColorNoise = std::make_unique<NoiseGeneratorPerlin>(&grassNoiseSeed, 1);
 
     setupGenerator(&stack_, version);
@@ -91,8 +92,8 @@ bool ChunkGenerator::provideChunk(int x, int z, ChunkData& chunk, std::unordered
         std::cout << std::endl;
     }*/
 
-    int64_t rand = (int64_t)x * 341873128712L + (int64_t)z * 132897987541L;
-    setSeed(&rand);
+    uint64_t rand = 0;
+    setSeed(&rand, (int64_t)x * 341873128712L + (int64_t)z * 132897987541L);
     setBlocksInChunk(x, z, chunk);
     replaceBiomeBlocks(&rand, x, z, chunk);
 
@@ -477,7 +478,7 @@ void ChunkGenerator::generateHeightmap(int p_185978_1_, int p_185978_2_, int p_1
 
 }
 
-void ChunkGenerator::generateBiomeTerrain112(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
+void ChunkGenerator::generateBiomeTerrain112(uint64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
 {
     int i = 63;//sealevel
     int iblockstate = top_block_;//topblock
@@ -563,7 +564,7 @@ void ChunkGenerator::generateBiomeTerrain112(int64_t* rand, ChunkData& chunkPrim
     }
 }
 
-void ChunkGenerator::defaultSurfaceBuild113(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
+void ChunkGenerator::defaultSurfaceBuild113(uint64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
 {
     int l = 63;
     int lv = top_block_;
@@ -618,17 +619,17 @@ void ChunkGenerator::defaultSurfaceBuild113(int64_t* rand, ChunkData& chunkPrime
     }
 }
 
-void ChunkGenerator::buildBedrock113(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
+void ChunkGenerator::buildBedrock113(uint64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
 {
     //in 1.13+, buildBedrock called after surface building
     //1.14+ and 1.13 have different bedrock gen
 }
 
-void ChunkGenerator::buildBedrock114(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
+void ChunkGenerator::buildBedrock114(uint64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
 {
 }
 
-void ChunkGenerator::replaceBiomeBlocks(int64_t* rand, int x, int z, ChunkData& primer)
+void ChunkGenerator::replaceBiomeBlocks(uint64_t* rand, int x, int z, ChunkData& primer)
 {
     double d0 = 0.03125;
     double* depthBuffer = surfaceNoise->getRegion(nullptr, 0, (double)(x * 16), (double)(z * 16), 16, 16, 0.0625, 0.0625, 1.0);
@@ -919,30 +920,30 @@ void ChunkGenerator::registerSurfaceBuilderIds()//don't register default
 
 void ChunkGenerator::registerSurfaceBuilderFuncs(MCversion version)
 {
-    surface_builder_to_additions_func_[MOUNTAIN_S] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->HillsMountainsSB(a, b, c, d, e, false); };
-    surface_builder_to_additions_func_[SHATTERED_SAVANNA_S] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->SavannaMutatedSB(a, b, c, d, e); };
-    surface_builder_to_additions_func_[GRAVELLY_MOUNTAIN_S] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->HillsMountainsSB(a, b, c, d, e, true); };
-    surface_builder_to_additions_func_[GIANT_TREE_TAIGA_S] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->TaigaSB(a, b, c, d, e); };
-    surface_builder_to_additions_func_[SWAMP_S] = [this](int64_t* a, ChunkData& b, int c, int d, double e) {this->SwampSB(a, b, c, d, e); };
+    surface_builder_to_additions_func_[MOUNTAIN_S] = [this](uint64_t* a, ChunkData& b, int c, int d, double e) {this->HillsMountainsSB(a, b, c, d, e, false); };
+    surface_builder_to_additions_func_[SHATTERED_SAVANNA_S] = [this](uint64_t* a, ChunkData& b, int c, int d, double e) {this->SavannaMutatedSB(a, b, c, d, e); };
+    surface_builder_to_additions_func_[GRAVELLY_MOUNTAIN_S] = [this](uint64_t* a, ChunkData& b, int c, int d, double e) {this->HillsMountainsSB(a, b, c, d, e, true); };
+    surface_builder_to_additions_func_[GIANT_TREE_TAIGA_S] = [this](uint64_t* a, ChunkData& b, int c, int d, double e) {this->TaigaSB(a, b, c, d, e); };
+    surface_builder_to_additions_func_[SWAMP_S] = [this](uint64_t* a, ChunkData& b, int c, int d, double e) {this->SwampSB(a, b, c, d, e); };
 
     //no running default surface building after mesa/badlands, still need bedrock gen though
     if (version == MC_1_12)
     {
-        surface_builder_to_additions_func_[MESA_S] = [this, version](int64_t* a, ChunkData& b, int c, int d, double e) {this->MesaSB112(a, b, c, d, e, false, false); };
-        surface_builder_to_additions_func_[WOODED_MESA_S] = [this, version](int64_t* a, ChunkData& b, int c, int d, double e) {this->MesaSB112(a, b, c, d, e, false, true); };
-        surface_builder_to_additions_func_[ERODED_MESA_S] = [this, version](int64_t* a, ChunkData& b, int c, int d, double e) {this->MesaSB112(a, b, c, d, e, true, false); };
+        surface_builder_to_additions_func_[MESA_S] = [this, version](uint64_t* a, ChunkData& b, int c, int d, double e) {this->MesaSB112(a, b, c, d, e, false, false); };
+        surface_builder_to_additions_func_[WOODED_MESA_S] = [this, version](uint64_t* a, ChunkData& b, int c, int d, double e) {this->MesaSB112(a, b, c, d, e, false, true); };
+        surface_builder_to_additions_func_[ERODED_MESA_S] = [this, version](uint64_t* a, ChunkData& b, int c, int d, double e) {this->MesaSB112(a, b, c, d, e, true, false); };
     }
     else
     {
-        surface_builder_to_additions_func_[MESA_S] = [this, version](int64_t* a, ChunkData& b, int c, int d, double e) {this->MesaDefSB113(a, b, c, d, e); };
-        surface_builder_to_additions_func_[WOODED_MESA_S] = [this, version](int64_t* a, ChunkData& b, int c, int d, double e) {this->MesaWoodedSB113(a, b, c, d, e); };
-        surface_builder_to_additions_func_[ERODED_MESA_S] = [this, version](int64_t* a, ChunkData& b, int c, int d, double e) {this->MesaErodedSB113(a, b, c, d, e); };
+        surface_builder_to_additions_func_[MESA_S] = [this, version](uint64_t* a, ChunkData& b, int c, int d, double e) {this->MesaDefSB113(a, b, c, d, e); };
+        surface_builder_to_additions_func_[WOODED_MESA_S] = [this, version](uint64_t* a, ChunkData& b, int c, int d, double e) {this->MesaWoodedSB113(a, b, c, d, e); };
+        surface_builder_to_additions_func_[ERODED_MESA_S] = [this, version](uint64_t* a, ChunkData& b, int c, int d, double e) {this->MesaErodedSB113(a, b, c, d, e); };
     }
 
-    surface_builder_to_additions_func_[FROZEN_OCEAN_S] = [this](int64_t* , ChunkData& , int , int , double ) { };//frozen ocean has temp dependencies, don't support right now
+    surface_builder_to_additions_func_[FROZEN_OCEAN_S] = [this](uint64_t* , ChunkData& , int , int , double ) { };//frozen ocean has temp dependencies, don't support right now
 }
 
-void ChunkGenerator::HillsMountainsSB(int64_t*, ChunkData&, int, int, double noiseVal, bool mutated) //hills were changed to mountains in 1.13. biome ids 3, 20, 34, 131, 162
+void ChunkGenerator::HillsMountainsSB(uint64_t*, ChunkData&, int, int, double noiseVal, bool mutated) //hills were changed to mountains in 1.13. biome ids 3, 20, 34, 131, 162
 {
     top_block_ = GRASS;
     filler_block_ = DIRT;
@@ -956,7 +957,7 @@ void ChunkGenerator::HillsMountainsSB(int64_t*, ChunkData&, int, int, double noi
     }
 }
 
-void ChunkGenerator::MesaSB112(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal, bool bryce/*'eroded 1.13+*/, bool forest/*'wooded' 1.13+*/)
+void ChunkGenerator::MesaSB112(uint64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal, bool bryce/*'eroded 1.13+*/, bool forest/*'wooded' 1.13+*/)
 {
     double d4 = 0.0;
     int k1;
@@ -1072,7 +1073,7 @@ void ChunkGenerator::MesaSB112(int64_t* rand, ChunkData& chunkPrimerIn, int x, i
     }
 }
 
-void ChunkGenerator::MesaDefSB113(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
+void ChunkGenerator::MesaDefSB113(uint64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
 {
     int n = x & 15;
     int o = z & 15;
@@ -1154,7 +1155,7 @@ void ChunkGenerator::MesaDefSB113(int64_t* rand, ChunkData& chunkPrimerIn, int x
         }
     }
 }
-void ChunkGenerator::MesaWoodedSB113(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
+void ChunkGenerator::MesaWoodedSB113(uint64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
 {
     int n = x & 15;
     int o = z & 15;
@@ -1242,7 +1243,7 @@ void ChunkGenerator::MesaWoodedSB113(int64_t* rand, ChunkData& chunkPrimerIn, in
         }
     }
 }
-void ChunkGenerator::MesaErodedSB113(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
+void ChunkGenerator::MesaErodedSB113(uint64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal)
 {
     double e = 0.0;
     double f = std::min(std::abs(noiseVal), mesaPillarNoise->getValue((double)x * 0.25, (double)z * 0.25) * 15.0);
@@ -1337,7 +1338,7 @@ void ChunkGenerator::MesaErodedSB113(int64_t* rand, ChunkData& chunkPrimerIn, in
     }
 }
 
-void ChunkGenerator::SwampSB(int64_t*, ChunkData& chunkPrimerIn, int x, int z, double)
+void ChunkGenerator::SwampSB(uint64_t*, ChunkData& chunkPrimerIn, int x, int z, double)
 {
     double d0 = grassColorNoise->getValue((double)x * 0.25, (double)z * 0.25);
     if (d0 > 0.0) {
@@ -1357,7 +1358,7 @@ void ChunkGenerator::SwampSB(int64_t*, ChunkData& chunkPrimerIn, int x, int z, d
         }
     }
 }
-void ChunkGenerator::TaigaSB(int64_t*, ChunkData&, int, int, double noiseVal)
+void ChunkGenerator::TaigaSB(uint64_t*, ChunkData&, int, int, double noiseVal)
 {
     top_block_ = GRASS;
     filler_block_ = DIRT;
@@ -1368,7 +1369,7 @@ void ChunkGenerator::TaigaSB(int64_t*, ChunkData&, int, int, double noiseVal)
         top_block_ = PODZOL;
     }
 }
-void ChunkGenerator::SavannaMutatedSB(int64_t*, ChunkData&, int, int, double noiseVal)
+void ChunkGenerator::SavannaMutatedSB(uint64_t*, ChunkData&, int, int, double noiseVal)
 {
     top_block_ = GRASS;
     filler_block_ = DIRT;

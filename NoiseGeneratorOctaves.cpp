@@ -1,12 +1,6 @@
 #include "NoiseGeneratorOctaves.h"
 
-int64_t lFloor(double value)
-{
-    int64_t i = (int64_t)value;
-    return value < (double)i ? i - 1L : i;
-}
-
-NoiseGeneratorOctaves::NoiseGeneratorOctaves(int64_t* seed, int octavesIn)
+NoiseGeneratorOctaves::NoiseGeneratorOctaves(uint64_t* seed, int octavesIn)
 {
     octaves = octavesIn;
 
@@ -42,8 +36,8 @@ double* NoiseGeneratorOctaves::generateNoiseOctaves(double* noiseArray, int nois
         double d0 = (double)xOffset * d3 * xScale;
         double d1 = (double)yOffset * d3 * yScale;
         double d2 = (double)zOffset * d3 * zScale;
-        int64_t k = lFloor(d0);
-        int64_t l = lFloor(d2);
+        int64_t k = (int64_t)(d0);
+        int64_t l = (int64_t)(d2);
         d0 = d0 - (double)k;
         d2 = d2 - (double)l;
         k = k % 16777216L;

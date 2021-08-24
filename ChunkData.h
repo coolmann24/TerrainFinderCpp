@@ -1,4 +1,6 @@
 #pragma once
+#ifndef CHUNKDATA_H
+#define CHUNKDATA_H
 
 class ChunkData
 {
@@ -27,3 +29,5 @@ public:
 private:
 	int heightmap_[16][16];
 };
+
+#endif

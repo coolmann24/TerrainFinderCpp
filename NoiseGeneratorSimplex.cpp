@@ -17,7 +17,7 @@ void NoiseGeneratorSimplex::initGrad3()
 	grad3[11][0] = 0; grad3[11][1] = -1; grad3[11][2] = -1;
 }
 
-NoiseGeneratorSimplex::NoiseGeneratorSimplex(int64_t* seed)
+NoiseGeneratorSimplex::NoiseGeneratorSimplex(uint64_t* seed)
 {
 	initGrad3();
 
