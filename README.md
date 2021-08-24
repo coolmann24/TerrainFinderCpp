@@ -5,7 +5,7 @@ This currently links against a modded version of Cubitect's 'cubiomes' library: 
 ### How to get this thing working in visual studio
 
 1. Git clone this
-2. Git clone https://github.com/Cubitect/cubiomes into a different folder
+2. Git clone this cubiomes fork https://github.com/IceTank/cubiomes into a different folder
 3. Open this project folder in VS
 4. File > New > Project from existing code
 5. Follow the instructions Porject type C++ select cloned repositiory and give it a name for instance 'TerrainFinder' APPLICATION TYPE Console application Release options leave empty then press finish.
