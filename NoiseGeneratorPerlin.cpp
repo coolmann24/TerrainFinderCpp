@@ -1,6 +1,6 @@
 #include "NoiseGeneratorPerlin.h"
 
-NoiseGeneratorPerlin::NoiseGeneratorPerlin(int64_t* p_i45470_1_, int p_i45470_2_)
+NoiseGeneratorPerlin::NoiseGeneratorPerlin(uint64_t* p_i45470_1_, int p_i45470_2_)
 {
     levels = p_i45470_2_;
 

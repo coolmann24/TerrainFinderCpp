@@ -6,7 +6,7 @@ int64_t lFloor(double value)
     return value < (double)i ? i - 1L : i;
 }
 
-NoiseGeneratorOctaves::NoiseGeneratorOctaves(int64_t* seed, int octavesIn)
+NoiseGeneratorOctaves::NoiseGeneratorOctaves(uint64_t* seed, int octavesIn)
 {
     octaves = octavesIn;
 

@@ -119,7 +119,7 @@ private:
     void registerTernaryBlocks();
     void registerTernaryIds();
 
-    using SurfaceBuilderAdditionsFunc = std::function<void(int64_t*, ChunkData&, int, int, double)>;
+    using SurfaceBuilderAdditionsFunc = std::function<void(uint64_t*, ChunkData&, int, int, double)>;
     std::unordered_map<int, int> biome_to_surface_builder_;
     std::unordered_map<int, SurfaceBuilderAdditionsFunc> surface_builder_to_additions_func_;
     //1.12 had a 'genTerrainBlocks' function for additional biome generation, but 1.16- has 'surface builders', of which most use the 'default' which generateBiomeTerrain implements
@@ -134,7 +134,7 @@ private:
 
     
 public:
-    ChunkGenerator(int64_t world_seed, MCversion version);
+    ChunkGenerator(uint64_t world_seed, MCversion version);
     bool provideChunk(int x, int z, ChunkData& chunk, std::unordered_set<int>* biomes = nullptr); //NONE OF THESE ARE THREAD SAFE
     bool provideChunkHeightmap(int x, int z, ChunkHeightmap& chunk, std::unordered_set<int>* biomes = nullptr);
 
@@ -147,21 +147,21 @@ private:
     inline int terrainHeight(int x, int z, int seed);
     void generateHeightmap(int p_185978_1_, int p_185978_2_, int p_185978_3_);
     void generateHeightmap(int p_185978_1_, int p_185978_2_, int p_185978_3_, std::pair<float, float> base_and_variation);
-    void generateBiomeTerrain112(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
-    void defaultSurfaceBuild113(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
-    void buildBedrock113(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
-    void buildBedrock114(int64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
-    void replaceBiomeBlocks(int64_t* rand, int x, int z, ChunkData& primer);
+    void generateBiomeTerrain112(uint64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
+    void defaultSurfaceBuild113(uint64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
+    void buildBedrock113(uint64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
+    void buildBedrock114(uint64_t* rand, ChunkData& chunkPrimerIn, int x, int z, double noiseVal);
+    void replaceBiomeBlocks(uint64_t* rand, int x, int z, ChunkData& primer);
 
 private:
 
-    void HillsMountainsSB(int64_t*, ChunkData&, int, int, double, bool);//1.12 called hills, mountains 1.13+
-    void MesaSB112(int64_t*, ChunkData&, int, int, double, bool, bool);//there is slight variation in mesa generation between 1.12/1.13+
-    void MesaDefSB113(int64_t*, ChunkData&, int, int, double);
-    void MesaWoodedSB113(int64_t*, ChunkData&, int, int, double);
-    void MesaErodedSB113(int64_t*, ChunkData&, int, int, double);
-    void SwampSB(int64_t*, ChunkData&, int, int, double);
-    void TaigaSB(int64_t*, ChunkData&, int, int, double);
-    void SavannaMutatedSB(int64_t*, ChunkData&, int, int, double);
+    void HillsMountainsSB(uint64_t*, ChunkData&, int, int, double, bool);//1.12 called hills, mountains 1.13+
+    void MesaSB112(uint64_t*, ChunkData&, int, int, double, bool, bool);//there is slight variation in mesa generation between 1.12/1.13+
+    void MesaDefSB113(uint64_t*, ChunkData&, int, int, double);
+    void MesaWoodedSB113(uint64_t*, ChunkData&, int, int, double);
+    void MesaErodedSB113(uint64_t*, ChunkData&, int, int, double);
+    void SwampSB(uint64_t*, ChunkData&, int, int, double);
+    void TaigaSB(uint64_t*, ChunkData&, int, int, double);
+    void SavannaMutatedSB(uint64_t*, ChunkData&, int, int, double);
 
 };

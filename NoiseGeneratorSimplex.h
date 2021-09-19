@@ -5,7 +5,7 @@ class NoiseGeneratorSimplex
 {
 public:
 
-    NoiseGeneratorSimplex(int64_t* random);
+    NoiseGeneratorSimplex(uint64_t* random);
 
     static int fastFloor(double value);
     static double dot(int* p_151604_0_, double p_151604_1_, double p_151604_3_);
